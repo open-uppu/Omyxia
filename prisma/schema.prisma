@@ -1,0 +1,365 @@
+// open-uppu — Multi-tenant Enterprise IT Master Blueprint
+// Phase 1 (SME): Tenant + User + Employee + Department + Position + ChartOfAccounts (basic)
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DATABASE_DIRECT_URL")
+  extensions = [pgcrypto, citext]
+}
+
+// ============================================================================
+// TENANT + USER
+// ============================================================================
+
+model Tenant {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  plan        TenantPlan @default(STARTER)
+  status      TenantStatus @default(ACTIVE)
+  settings    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users        UserTenant[]
+  employees    Employee[]
+  departments  Department[]
+  positions    Position[]
+  accounts     ChartOfAccounts[]
+  invoices     Invoice[]
+  vendors      Vendor[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+enum TenantPlan {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  emailVerified DateTime?
+  passwordHash  String
+  name          String
+  locale        String   @default("th")
+  avatarUrl     String?
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenants       UserTenant[]
+  employees     Employee[]
+  sessions      UserSession[]
+  mfaFactors    MfaFactor[]
+
+  @@index([email])
+}
+
+model UserTenant {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      TenantRole @default(MEMBER)
+  active    Boolean  @default(true)
+  joinedAt  DateTime @default(now())
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@index([tenantId])
+}
+
+enum TenantRole {
+  OWNER
+  ADMIN
+  HR_MANAGER
+  ACCOUNTANT
+  MANAGER
+  MEMBER
+}
+
+model UserSession {
+  id          String   @id @default(cuid())
+  userId      String
+  token       String   @unique
+  activeTenantId String?
+  userAgent   String?
+  ipAddress   String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// ============================================================================
+// HRM (Phase 1 — basic employee + org)
+// ============================================================================
+
+model Employee {
+  id              String   @id @default(cuid())
+  tenantId        String
+  userId          String?
+  employeeNo      String
+  firstName       String
+  lastName        String
+  thFirstName     String?
+  thLastName      String?
+  email           String?
+  nationalId      String?
+  taxId           String?
+  socialSecurityNo String?
+  hireDate        DateTime
+  terminationDate DateTime?
+  employmentType  EmploymentType @default(FULL_TIME)
+  departmentId    String?
+  positionId      String?
+  managerId       String?
+  status          EmployeeStatus @default(ACTIVE)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  department  Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  position    Position?   @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  manager     Employee?   @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
+  reports     Employee[]  @relation("EmployeeManager")
+
+  @@unique([tenantId, employeeNo])
+  @@unique([tenantId, email])
+  @@unique([tenantId, nationalId])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, departmentId])
+  @@index([tenantId, managerId])
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  parentId    String?
+  managerId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent      Department? @relation("DepartmentTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Department[] @relation("DepartmentTree")
+  employees   Employee[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([tenantId, parentId])
+}
+
+model Position {
+  id          String   @id @default(cuid())
+  tenantId    String
+  code        String
+  title       String
+  level       Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees   Employee[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+// ============================================================================
+// ERP (Phase 1 — basic GL chart of accounts)
+// ============================================================================
+
+model ChartOfAccounts {
+  id              String   @id @default(cuid())
+  tenantId        String
+  code            String
+  name            String
+  type            AccountType
+  normalBalance   NormalBalance @default(DEBIT)
+  parentId        String?
+  currency        String   @default("THB")
+  isActive        Boolean  @default(true)
+  isPostable      Boolean  @default(true)
+  path            String   @default("/")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent          ChartOfAccounts? @relation("AccountTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children        ChartOfAccounts[] @relation("AccountTree")
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([tenantId, parentId])
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum NormalBalance {
+  DEBIT
+  CREDIT
+}
+
+model Vendor {
+  id          String   @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  taxId       String?
+  email       String?
+  phone       String?
+  address     String?
+  paymentTerms Int     @default(30)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices    Invoice[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  tenantId    String
+  vendorId    String?
+  customerName String
+  invoiceNo   String
+  type        InvoiceType @default(AP)
+  status      InvoiceStatus @default(DRAFT)
+  invoiceDate DateTime
+  dueDate     DateTime
+  total       Decimal  @db.Decimal(15, 2)
+  taxAmount   Decimal  @default(0) @db.Decimal(15, 2)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vendor      Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, invoiceNo])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, dueDate])
+}
+
+enum InvoiceType {
+  AP
+  AR
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  PAID
+  OVERDUE
+  VOID
+}
+
+// ============================================================================
+// IAM (Phase 1 — basic MFA + audit)
+// ============================================================================
+
+model MfaFactor {
+  id          String   @id @default(cuid())
+  userId      String
+  type        MfaType
+  secret      String?
+  backupCodes String[] @default([])
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, type])
+}
+
+enum MfaType {
+  TOTP
+  SMS
+  EMAIL
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  userId      String?
+  table       String
+  rowId       String?
+  action      AuditAction
+  before      Json?
+  after       Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([table, rowId])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  PERMISSION_CHANGE
+  ROLE_ASSIGN
+  MFA_CHALLENGE
+  PASSWORD_RESET
+  SUSPICIOUS_ACTIVITY
+}

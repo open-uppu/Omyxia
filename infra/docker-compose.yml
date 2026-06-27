@@ -1,0 +1,72 @@
+name: open-uppu
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: open-uppu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: openuppu
+      POSTGRES_PASSWORD: openuppu_dev_password
+      POSTGRES_DB: openuppu
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openuppu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: open-uppu-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: open-uppu-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin_dev_password
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  stalwart:
+    image: stalwartlabs/stalwart:latest
+    container_name: open-uppu-stalwart
+    restart: unless-stopped
+    hostname: mail.openuppu.local
+    environment:
+      STALWART_HOSTNAME: mail.openuppu.local
+      STALWART_DOMAIN: openuppu.local
+    ports:
+      - "25:25"
+      - "587:587"
+      - "465:465"
+      - "143:143"
+      - "993:993"
+      - "8080:8080"
+
+volumes:
+  postgres_data:
+  minio_data:

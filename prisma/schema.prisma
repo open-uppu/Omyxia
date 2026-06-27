@@ -1,6 +1,4 @@
-// open-uppu — Multi-tenant Enterprise IT Master Blueprint
-// Phase 1 (SME): Tenant + User + Employee + Department + Position + ChartOfAccounts (basic)
-// Phase 1+ (Sprint): + Email + Chat + File Share + CRM + ERP core + HRM core
+// omyxia — Prisma schema (clean, validation-ready)
 
 generator client {
   provider        = "prisma-client-js"
@@ -10,20 +8,15 @@ generator client {
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
-  directUrl  = env("DATABASE_DIRECT_URL")
-  extensions = [pgcrypto, citext]
+  directUrl  = env("DIRECT_URL")
 }
-
-// ============================================================================
-// TENANT + USER (loop #2)
-// ============================================================================
 
 model Tenant {
   id          String   @id @default(cuid())
   slug        String   @unique
   name        String
-  plan        TenantPlan @default(STARTER)
-  status      TenantStatus @default(ACTIVE)
+  plan        String   @default("STARTER")
+  status      String   @default("ACTIVE")
   settings    Json     @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -32,150 +25,95 @@ model Tenant {
   employees    Employee[]
   departments  Department[]
   positions    Position[]
-  accounts     ChartOfAccounts[]
-  invoices     Invoice[]
-  vendors      Vendor[]
-  customers    Customer[]
-  emailMessages EmailMessage[]
-  emailTemplates EmailTemplate[]
-  chatChannels ChatChannel[]
-  files        FileItem[]
-  fileFolders  FileFolder[]
-  crmLeads     CrmLead[]
-  crmActivities CrmActivity[]
-  crmPipelines CrmPipeline[]
-  arInvoices   ArInvoice[]
-  apBills      ApBill[]
-  taxRates     TaxRate[]
-  taxTransactions TaxTransaction[]
-  journals     JournalEntry[]
-  fiscalPeriods FiscalPeriod[]
-  attendanceRecords AttendanceRecord[]
-  leaveRequests LeaveRequest[]
-  payrollPeriods PayrollPeriod[]
-  payrollLines  PayrollLine[]
-  leaveQuotas   LeaveQuota[]
-  attendances   AttendanceRecord[]
 
   @@index([slug])
   @@index([status])
 }
 
-enum TenantPlan { STARTER GROWTH ENTERPRISE }
-enum TenantStatus { ACTIVE SUSPENDED ARCHIVED }
-
 model User {
   id            String   @id @default(cuid())
   email         String   @unique
-  emailVerified DateTime?
   passwordHash  String
-  name          String
-  locale        String   @default("th")
-  avatarUrl     String?
-  lastLoginAt   DateTime?
+  displayName   String
+  locale        String   @default("en")
+  status        String   @default("ACTIVE")
+  mfaEnabled    Boolean  @default(false)
+  mfaSecret     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   tenants       UserTenant[]
-  employees     Employee[]
   sessions      UserSession[]
   mfaFactors    MfaFactor[]
-  sentEmails    EmailMessage[] @relation("Sender")
-  chatMessages  ChatMessage[]
-  chatMemberships ChatChannelMember[]
-  fileUploads   FileItem[]
-  createdFiles  FileFolder[]
-  crmLeads      CrmLead[] @relation("LeadOwner")
-  crmActivities CrmActivity[]
+  auditLogs     AuditLog[]
 
   @@index([email])
+  @@index([status])
 }
 
 model UserTenant {
   id        String   @id @default(cuid())
-  tenantId  String
   userId    String
-  role      TenantRole @default(MEMBER)
-  active    Boolean  @default(true)
+  tenantId  String
+  role      String   @default("MEMBER") // OWNER | ADMIN | MEMBER | VIEWER
+  status    String   @default("ACTIVE")
   joinedAt  DateTime @default(now())
 
-  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@unique([tenantId, userId])
-  @@index([userId])
+  @@unique([userId, tenantId])
   @@index([tenantId])
+  @@index([role])
 }
-
-enum TenantRole { OWNER ADMIN HR_MANAGER ACCOUNTANT MANAGER MEMBER SALES_REP SUPPORT_AGENT WAREHOUSE_MANAGER }
 
 model UserSession {
   id          String   @id @default(cuid())
   userId      String
-  token       String   @unique
-  activeTenantId String?
+  ip          String?
   userAgent   String?
-  ipAddress   String?
   expiresAt   DateTime
   createdAt   DateTime @default(now())
+  revokedAt   DateTime?
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token])
   @@index([expiresAt])
 }
 
-// ============================================================================
-// HRM (loop #2 + loop #6)
-// ============================================================================
-
 model Employee {
-  id              String   @id @default(cuid())
-  tenantId        String
-  userId          String?
-  employeeNo      String
-  firstName       String
-  lastName        String
-  thFirstName     String?
-  thLastName      String?
-  email           String?
-  nationalId      String?
-  taxId           String?
-  socialSecurityNo String?
-  hireDate        DateTime
-  terminationDate DateTime?
-  employmentType  EmploymentType @default(FULL_TIME)
-  departmentId    String?
-  positionId      String?
-  managerId       String?
-  baseSalary      Decimal? @db.Decimal(15, 2)
-  status          EmployeeStatus @default(ACTIVE)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  employeeNo    String
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  departmentId  String?
+  positionId    String?
+  managerId     String?
+  hireDate      DateTime
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  department      Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  position        Position?   @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  manager         Employee?   @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
-  reports         Employee[]  @relation("EmployeeManager")
-  attendances     AttendanceRecord[]
-  leaveRequests   LeaveRequest[]
-  leaveQuotas     LeaveQuota[]
-  payrollLines    PayrollLine[]
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  department    Department?  @relation(fields: [departmentId], references: [id])
+  position      Position?    @relation(fields: [positionId], references: [id])
+  manager       Employee?    @relation("ManagerSubordinates", fields: [managerId], references: [id])
+  subordinates  Employee[]   @relation("ManagerSubordinates")
+
+  attendance    AttendanceRecord[]
+  leaveRequests LeaveRequest[]
+  payrollLines  PayrollLine[]
 
   @@unique([tenantId, employeeNo])
   @@unique([tenantId, email])
-  @@unique([tenantId, nationalId])
   @@index([tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, departmentId])
-  @@index([tenantId, managerId])
+  @@index([departmentId])
+  @@index([status])
 }
-
-enum EmploymentType { FULL_TIME PART_TIME CONTRACT INTERN }
-enum EmployeeStatus { ACTIVE ON_LEAVE TERMINATED }
 
 model Department {
   id          String   @id @default(cuid())
@@ -184,17 +122,19 @@ model Department {
   name        String
   parentId    String?
   managerId   String?
+  costCenter  String?
+  status      String   @default("ACTIVE")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parent      Department? @relation("DepartmentTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children    Department[] @relation("DepartmentTree")
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent      Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children    Department[] @relation("DepartmentHierarchy")
   employees   Employee[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
-  @@index([tenantId, parentId])
+  @@index([parentId])
 }
 
 model Position {
@@ -202,811 +142,666 @@ model Position {
   tenantId    String
   code        String
   title       String
-  level       Int      @default(1)
+  level       Int       @default(1)
+  status      String   @default("ACTIVE")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employees   Employee[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
 }
 
-// HRM core additions (loop #6)
 model AttendanceRecord {
-  id          String   @id @default(cuid())
-  tenantId    String
-  employeeId  String
-  date        DateTime
-  clockIn     DateTime?
-  clockOut    DateTime?
-  hoursWorked Decimal? @db.Decimal(5, 2)
-  status      AttendanceStatus @default(PRESENT)
-  notes       String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  employeeId    String
+  date          DateTime @db.Date
+  clockIn       DateTime?
+  clockOut      DateTime?
+  hoursWorked   Float?
+  status        String   @default("PRESENT")
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, employeeId, date])
   @@index([tenantId])
-  @@index([tenantId, date])
+  @@index([employeeId])
+  @@index([date])
 }
-
-enum AttendanceStatus { PRESENT ABSENT LATE HALF_DAY LEAVE HOLIDAY }
 
 model LeaveRequest {
-  id          String   @id @default(cuid())
-  tenantId    String
-  employeeId  String
-  leaveType   LeaveType
-  startDate   DateTime
-  endDate     DateTime
-  days        Int
-  reason      String?
-  status      LeaveStatus @default(PENDING)
-  approverId  String?
-  approvedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  employeeId    String
+  leaveType     String
+  startDate     DateTime @db.Date
+  endDate       DateTime @db.Date
+  days          Int
+  reason        String?
+  status        String   @default("PENDING")
+  approverId    String?
+  approvedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, employeeId])
+  @@index([employeeId])
+  @@index([status])
 }
 
-enum LeaveType { VACATION SICK PERSONAL MATERNITY PATERNITY UNPAID OTHER }
-enum LeaveStatus { PENDING APPROVED REJECTED CANCELLED }
-
 model LeaveQuota {
-  id          String   @id @default(cuid())
-  tenantId    String
-  employeeId  String
-  leaveType   LeaveType
-  year        Int
-  quotaDays   Int
-  usedDays    Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  tenantId      String
+  employeeId    String
+  leaveType     String
+  year          Int
+  entitlement   Float
+  used          Float    @default(0)
+  remaining     Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([tenantId, employeeId, leaveType, year])
   @@index([tenantId])
 }
 
 model PayrollPeriod {
-  id          String   @id @default(cuid())
-  tenantId    String
-  periodStart DateTime
-  periodEnd   DateTime
-  status      PayrollStatus @default(DRAFT)
-  approvedBy  String?
-  approvedAt  DateTime?
-  paidAt      DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  periodStart   DateTime @db.Date
+  periodEnd     DateTime @db.Date
+  status        String   @default("OPEN")
+  totalGross    Float    @default(0)
+  totalNet      Float    @default(0)
+  totalTax      Float    @default(0)
+  processedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  lines       PayrollLine[]
+  lines         PayrollLine[]
 
   @@unique([tenantId, periodStart])
-  @@index([tenantId, status])
+  @@index([tenantId])
 }
-
-enum PayrollStatus { DRAFT APPROVED PAID CANCELLED }
 
 model PayrollLine {
-  id          String   @id @default(cuid())
-  tenantId    String
-  periodId    String
-  employeeId  String
-  baseSalary  Decimal  @db.Decimal(15, 2)
-  overtime    Decimal  @default(0) @db.Decimal(15, 2)
-  bonus       Decimal  @default(0) @db.Decimal(15, 2)
-  allowances  Decimal  @default(0) @db.Decimal(15, 2)
-  deductions  Decimal  @default(0) @db.Decimal(15, 2)
-  tax         Decimal  @default(0) @db.Decimal(15, 2)
-  socialSecurity Decimal @default(0) @db.Decimal(15, 2)
-  netPay      Decimal  @db.Decimal(15, 2)
-  details     Json     @default("{}")
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  periodId      String
+  employeeId    String
+  gross         Float
+  tax           Float
+  net           Float
+  breakdown     Json     @default("{}")
+  createdAt     DateTime @default(now())
 
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  period      PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
-  employee    Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  period        PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  employee      Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  @@unique([periodId, employeeId])
   @@index([tenantId])
-  @@index([tenantId, periodId])
+  @@index([periodId])
+  @@index([employeeId])
 }
 
-// ============================================================================
-// ERP (loop #2 + loop #5)
-// ============================================================================
-
 model ChartOfAccounts {
-  id              String   @id @default(cuid())
-  tenantId        String
-  code            String
-  name            String
-  type            AccountType
-  normalBalance   NormalBalance @default(DEBIT)
-  parentId        String?
-  currency        String   @default("THB")
-  isActive        Boolean  @default(true)
-  isPostable      Boolean  @default(true)
-  path            String   @default("/")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  type          String
+  parentId      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant          Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parent          ChartOfAccounts? @relation("AccountTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children        ChartOfAccounts[] @relation("AccountTree")
-  journalLines    JournalLine[]
+  parent        ChartOfAccounts?  @relation("COA_Hierarchy", fields: [parentId], references: [id])
+  children      ChartOfAccounts[] @relation("COA_Hierarchy")
 
   @@unique([tenantId, code])
   @@index([tenantId])
-  @@index([tenantId, type])
-  @@index([tenantId, parentId])
+  @@index([type])
 }
 
-enum AccountType { ASSET LIABILITY EQUITY REVENUE EXPENSE }
-enum NormalBalance { DEBIT CREDIT }
-
 model JournalEntry {
-  id          String   @id @default(cuid())
-  tenantId    String
-  entryNo     String
-  date        DateTime
-  description String
-  reference   String?
-  status      JournalStatus @default(DRAFT)
-  approvedBy  String?
-  approvedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  entryNo       String
+  date          DateTime @db.Date
+  description   String
+  status        String   @default("POSTED")
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  lines       JournalLine[]
+  lines         JournalLine[]
 
   @@unique([tenantId, entryNo])
   @@index([tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, date])
+  @@index([date])
 }
 
-enum JournalStatus { DRAFT REVIEW POSTED REVERSED }
-
 model JournalLine {
-  id          String   @id @default(cuid())
-  tenantId    String
-  entryId     String
-  accountId   String
-  debit       Decimal  @default(0) @db.Decimal(15, 2)
-  credit      Decimal  @default(0) @db.Decimal(15, 2)
-  description String?
-  costCenter  String?
-  project     String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  entryId       String
+  accountId     String
+  debit         Float    @default(0)
+  credit        Float    @default(0)
+  description   String?
 
-  entry       JournalEntry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  account     ChartOfAccounts @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  entry         JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([entryId])
+  @@index([accountId])
 }
 
 model FiscalPeriod {
-  id          String   @id @default(cuid())
-  tenantId    String
-  startDate   DateTime
-  endDate     DateTime
-  status      FiscalPeriodStatus @default(OPEN)
-  closedAt    DateTime?
-  closedBy    String?
-  createdAt   DateTime @default(now())
-
-  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  tenantId      String
+  startDate     DateTime @db.Date
+  endDate       DateTime @db.Date
+  isClosed      Boolean  @default(false)
+  closedAt      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([tenantId, startDate])
   @@index([tenantId])
 }
 
-enum FiscalPeriodStatus { OPEN CLOSED LOCKED }
-
 model TaxRate {
-  id          String   @id @default(cuid())
-  tenantId    String
-  type        TaxType
-  name        String
-  rate        Decimal  @db.Decimal(5, 2)
-  effectiveFrom DateTime
-  effectiveTo DateTime?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  rate          Float
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  transactions TaxTransaction[]
-
-  @@unique([tenantId, type, effectiveFrom])
+  @@unique([tenantId, code])
   @@index([tenantId])
 }
-
-enum TaxType { VAT OUTPUT_VAT INPUT_VAT WHT_1 WHT_2 WHT_3 WHT_5 STAMP_DUTY }
 
 model TaxTransaction {
   id            String   @id @default(cuid())
   tenantId      String
-  taxRateId     String
-  sourceType    String   // 'INVOICE' | 'BILL' | 'PAYMENT'
-  sourceId      String
-  baseAmount    Decimal  @db.Decimal(15, 2)
-  taxAmount     Decimal  @db.Decimal(15, 2)
-  certificateNo String?
-  filedAt       DateTime?
+  date          DateTime @db.Date
+  taxCode       String
+  baseAmount    Float
+  taxAmount     Float
+  refType       String?
+  refId         String?
   createdAt     DateTime @default(now())
 
-  tenant        Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  taxRate       TaxRate @relation(fields: [taxRateId], references: [id], onDelete: Restrict)
-
   @@index([tenantId])
-  @@index([tenantId, sourceType, sourceId])
-  @@index([tenantId, filedAt])
+  @@index([date])
 }
 
 model Vendor {
-  id          String   @id @default(cuid())
-  tenantId    String
-  code        String
-  name        String
-  taxId       String?
-  email       String?
-  phone       String?
-  address     String?
-  paymentTerms Int     @default(30)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  taxId         String?
+  email         String?
+  phone         String?
+  address       String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  apBills     ApBill[]
+  bills         ApBill[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
 }
 
 model Customer {
-  id          String   @id @default(cuid())
-  tenantId    String
-  code        String
-  name        String
-  taxId       String?
-  email       String?
-  phone       String?
-  address     String?
-  creditLimit Decimal  @default(0) @db.Decimal(15, 2)
-  paymentTerms Int     @default(30)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  taxId         String?
+  email         String?
+  phone         String?
+  address       String?
+  creditLimit   Float    @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  arInvoices  ArInvoice[]
-  crmLeads    CrmLead[]
+  invoices      ArInvoice[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
 }
 
 model ArInvoice {
-  id          String   @id @default(cuid())
-  tenantId    String
-  customerId  String?
-  invoiceNo   String
-  invoiceDate DateTime
-  dueDate     DateTime
-  subtotal    Decimal  @db.Decimal(15, 2)
-  taxAmount   Decimal  @default(0) @db.Decimal(15, 2)
-  total       Decimal  @db.Decimal(15, 2)
-  paidAmount  Decimal  @default(0) @db.Decimal(15, 2)
-  status      ArInvoiceStatus @default(DRAFT)
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  invoiceNo     String
+  customerId    String
+  invoiceDate   DateTime @db.Date
+  dueDate       DateTime @db.Date
+  subtotal      Float
+  taxAmount     Float
+  total         Float
+  paidAmount    Float    @default(0)
+  status        String   @default("OPEN")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customer      Customer @relation(fields: [customerId], references: [id])
 
   @@unique([tenantId, invoiceNo])
   @@index([tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, dueDate])
+  @@index([customerId])
+  @@index([status])
 }
 
-enum ArInvoiceStatus { DRAFT SENT PARTIAL PAID OVERDUE VOID }
-
 model ApBill {
-  id          String   @id @default(cuid())
-  tenantId    String
-  vendorId    String
-  billNo      String
-  billDate    DateTime
-  dueDate     DateTime
-  subtotal    Decimal  @db.Decimal(15, 2)
-  taxAmount   Decimal  @default(0) @db.Decimal(15, 2)
-  whtAmount   Decimal  @default(0) @db.Decimal(15, 2)
-  total       Decimal  @db.Decimal(15, 2)
-  paidAmount  Decimal  @default(0) @db.Decimal(15, 2)
-  status      ApBillStatus @default(DRAFT)
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  billNo        String
+  vendorId      String
+  billDate      DateTime @db.Date
+  dueDate       DateTime @db.Date
+  subtotal      Float
+  taxAmount     Float
+  total         Float
+  paidAmount    Float    @default(0)
+  status        String   @default("OPEN")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  vendor      Vendor  @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  vendor        Vendor @relation(fields: [vendorId], references: [id])
 
   @@unique([tenantId, billNo])
   @@index([tenantId])
-  @@index([tenantId, status])
+  @@index([vendorId])
+  @@index([status])
 }
 
-enum ApBillStatus { DRAFT APPROVED PARTIAL PAID OVERDUE VOID }
-
-// ============================================================================
-// CRM (loop #7)
-// ============================================================================
-
 model CrmPipeline {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String
-  stages      Json     @default("[]") // array of stage names
-  isDefault   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  description   String?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  leads       CrmLead[]
+  leads         CrmLead[]
 
-  @@unique([tenantId, name])
   @@index([tenantId])
 }
 
 model CrmLead {
-  id          String   @id @default(cuid())
-  tenantId    String
-  customerId  String?
-  ownerId     String?
-  pipelineId  String?
-  stage       String?
-  source      String?
-  name        String
-  company     String?
-  email       String?
-  phone       String?
-  value       Decimal  @default(0) @db.Decimal(15, 2)
-  probability Int      @default(0)
-  status      CrmLeadStatus @default(NEW)
-  expectedCloseDate DateTime?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  pipelineId    String
+  name          String
+  contactEmail  String?
+  contactPhone  String?
+  source        String?
+  stage         String   @default("NEW")
+  score         Int      @default(0)
+  estimatedValue Float   @default(0)
+  ownerId       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer    Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  owner       User?       @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  pipeline    CrmPipeline? @relation(fields: [pipelineId], references: [id], onDelete: SetNull)
-  activities  CrmActivity[]
+  pipeline      CrmPipeline    @relation(fields: [pipelineId], references: [id])
+  activities    CrmActivity[]
 
   @@index([tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, stage])
-  @@index([tenantId, ownerId])
+  @@index([pipelineId])
+  @@index([stage])
 }
-
-enum CrmLeadStatus { NEW CONTACTED QUALIFIED PROPOSAL NEGOTIATION WON LOST }
 
 model CrmActivity {
-  id          String   @id @default(cuid())
-  tenantId    String
-  leadId      String?
-  userId      String
-  type        CrmActivityType
-  subject     String
-  description String?
-  dueAt       DateTime?
-  completedAt DateTime?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  leadId        String
+  type          String
+  subject       String
+  body          String?
+  dueDate       DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  lead        CrmLead? @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead          CrmLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
-  @@index([tenantId, leadId])
-  @@index([tenantId, completedAt])
+  @@index([leadId])
 }
-
-enum CrmActivityType { CALL EMAIL MEETING TASK NOTE }
-
-// ============================================================================
-// WORKSPACE (loop #4)
-// ============================================================================
 
 model EmailMessage {
-  id          String   @id @default(cuid())
-  tenantId    String
-  senderId    String?
-  fromAddress String
-  toAddresses String[]
-  ccAddresses String[] @default([])
-  bccAddresses String[] @default([])
-  subject     String
-  bodyHtml    String?
-  bodyText    String?
-  status      EmailStatus @default(DRAFT)
-  sentAt      DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  sender      User?  @relation("Sender", fields: [senderId], references: [id], onDelete: SetNull)
+  id            String   @id @default(cuid())
+  tenantId      String
+  folder        String   @default("INBOX")
+  from          String
+  to            String
+  subject       String
+  body          String
+  isRead        Boolean  @default(false)
+  receivedAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
 
   @@index([tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, sentAt])
+  @@index([folder])
 }
 
-enum EmailStatus { DRAFT QUEUED SENT DELIVERED BOUNCED FAILED }
-
 model EmailTemplate {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String
-  subject     String
-  bodyHtml    String
-  variables   String[] @default([])
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  subject       String
+  body          String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, name])
+  @@unique([tenantId, code])
   @@index([tenantId])
 }
 
 model ChatChannel {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String
-  description String?
-  type        ChatChannelType @default(PUBLIC)
-  isArchived  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  isPrivate     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  members     ChatChannelMember[]
-  messages    ChatMessage[]
+  members       ChatChannelMember[]
+  messages      ChatMessage[]
 
-  @@unique([tenantId, name])
   @@index([tenantId])
 }
 
-enum ChatChannelType { PUBLIC PRIVATE DIRECT }
-
 model ChatChannelMember {
-  id          String   @id @default(cuid())
-  tenantId    String
-  channelId   String
-  userId      String
-  role        ChatMemberRole @default(MEMBER)
-  lastReadAt  DateTime?
-  joinedAt    DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  channelId     String
+  userId        String
+  joinedAt      DateTime @default(now())
 
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel       ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
   @@unique([channelId, userId])
   @@index([tenantId])
-  @@index([userId])
 }
 
-enum ChatMemberRole { OWNER ADMIN MEMBER GUEST }
-
 model ChatMessage {
-  id          String   @id @default(cuid())
-  tenantId    String
-  channelId   String
-  senderId    String
-  content     String
-  parentId    String?
-  editedAt    DateTime?
-  deletedAt   DateTime?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  channelId     String
+  userId        String
+  body          String
+  editedAt      DateTime?
+  createdAt     DateTime @default(now())
 
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  sender      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel       ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
-  @@index([channelId, createdAt])
-  @@index([senderId])
+  @@index([channelId])
 }
 
 model FileFolder {
-  id          String   @id @default(cuid())
-  tenantId    String
-  parentId    String?
-  ownerId     String?
-  name        String
-  path        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  parentId      String?
+  name          String
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parent      FileFolder? @relation("FolderTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children    FileFolder[] @relation("FolderTree")
-  files       FileItem[]
-  owner       User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  parent        FileFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children      FileFolder[] @relation("FolderHierarchy")
+  files         FileItem[]
 
-  @@unique([tenantId, parentId, name])
   @@index([tenantId])
-  @@index([tenantId, parentId])
+  @@index([parentId])
 }
 
 model FileItem {
-  id          String   @id @default(cuid())
-  tenantId    String
-  folderId    String?
-  ownerId     String?
-  name        String
-  mimeType    String
-  size        BigInt
-  storageKey  String
-  version     Int      @default(1)
-  checksum    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  folderId      String?
+  name          String
+  mimeType      String
+  size          Int
+  storageKey    String
+  checksum      String?
+  uploadedBy    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  folder      FileFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  owner       User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  folder        FileFolder? @relation(fields: [folderId], references: [id])
 
   @@index([tenantId])
-  @@index([tenantId, folderId])
-  @@index([tenantId, ownerId])
+  @@index([folderId])
 }
-
-// ============================================================================
-// IAM (loop #2 + loop #3)
-// ============================================================================
 
 model MfaFactor {
-  id          String   @id @default(cuid())
-  userId      String
-  type        MfaType
-  secret      String?
-  backupCodes String[] @default([])
-  isActive    Boolean  @default(true)
-  lastUsedAt  DateTime?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  secret        String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([userId, type])
 }
-
-enum MfaType { TOTP SMS EMAIL }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  tenantId    String?
-  userId      String?
-  table       String
-  rowId       String?
-  action      AuditAction
-  before      Json?
-  after       Json?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String?
+  userId        String?
+  action        String
+  resourceType  String
+  resourceId    String?
+  ip            String?
+  userAgent     String?
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now())
 
-  @@index([tenantId, createdAt])
-  @@index([userId, createdAt])
-  @@index([table, rowId])
-}
-
-enum AuditAction { CREATE UPDATE DELETE LOGIN LOGOUT PERMISSION_CHANGE ROLE_ASSIGN MFA_CHALLENGE PASSWORD_RESET SUSPICIOUS_ACTIVITY }
-// ============================================================================
-// SPECIALIZED SYSTEMS (loops #8-#13) — Phase 2
-// ============================================================================
-
-// FRM (loop #8)
-model CreditAssessment {
-  id              String   @id @default(cuid())
-  tenantId        String
-  partyType       String
-  partyId         String
-  creditLimit     Decimal  @db.Decimal(15, 2)
-  currentExposure Decimal  @default(0) @db.Decimal(15, 2)
-  riskScore       Int      @default(0)
-  riskGrade       String?
-  assessedAt      DateTime @default(now())
-  nextReviewAt    DateTime?
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  user          User? @relation(fields: [userId], references: [id])
 
   @@index([tenantId])
-  @@index([tenantId, partyType, partyId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model CreditAssessment {
+  id            String   @id @default(cuid())
+  tenantId      String
+  customerId    String
+  score         Int
+  riskLevel     String
+  notes         String?
+  assessedAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([customerId])
 }
 
 model CashFlowForecast {
-  id               String   @id @default(cuid())
-  tenantId         String
-  periodStart      DateTime
-  periodEnd        DateTime
-  openingBalance   Decimal  @db.Decimal(15, 2)
-  expectedInflow   Decimal  @db.Decimal(15, 2)
-  expectedOutflow  Decimal  @db.Decimal(15, 2)
-  closingBalance   Decimal  @db.Decimal(15, 2)
-  notes            String?
-  createdAt        DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  periodStart   DateTime @db.Date
+  periodEnd     DateTime @db.Date
+  openingBalance Float
+  inflow        Float    @default(0)
+  outflow       Float    @default(0)
+  closingBalance Float
+  createdAt     DateTime @default(now())
 
   @@index([tenantId])
+  @@index([periodStart])
 }
 
 model FraudAlert {
-  id          String   @id @default(cuid())
-  tenantId    String
-  sourceType  String
-  sourceId    String?
-  alertType   String
-  severity    String
-  description String
-  status      String   @default("OPEN")
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  source        String
+  severity      String
+  status        String   @default("OPEN")
+  description   String
+  metadata      Json     @default("{}")
+  detectedAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
 
   @@index([tenantId])
+  @@index([severity])
+  @@index([status])
 }
 
-// MAS + CDP (loop #9)
 model MarketingCampaign {
-  id                String   @id @default(cuid())
-  tenantId          String
-  name              String
-  type              String
-  status            String   @default("DRAFT")
-  audienceFilter    Json     @default("{}")
-  emailTemplateId   String?
-  scheduledAt       DateTime?
-  sentAt            DateTime?
-  recipientsCount   Int      @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  channel       String
+  status        String   @default("DRAFT")
+  startDate     DateTime?
+  endDate       DateTime?
+  budget        Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([tenantId])
+  @@index([status])
 }
 
 model CustomerProfile {
-  id              String   @id @default(cuid())
-  tenantId        String
-  customerId      String?
-  email           String?
-  phone           String?
-  attributes      Json     @default("{}")
-  lastEventAt     DateTime?
-  totalEvents     Int      @default(0)
-  lifetimeValue   Decimal  @default(0) @db.Decimal(15, 2)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  customerId    String
+  traits        Json     @default("{}")
+  preferences   Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  @@unique([tenantId, customerId])
   @@index([tenantId])
-  @@index([tenantId, email])
 }
 
 model CustomerEvent {
-  id          String   @id @default(cuid())
-  tenantId    String
-  profileId   String
-  type        String
-  source      String?
-  properties  Json     @default("{}")
-  occurredAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  customerId    String
+  eventType     String
+  payload       Json     @default("{}")
+  occurredAt    DateTime @default(now())
 
   @@index([tenantId])
-  @@index([profileId, occurredAt])
+  @@index([customerId])
+  @@index([occurredAt])
 }
 
-// PMS + DMS (loop #10)
 model Project {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String
-  code        String?
-  description String?
-  status      String   @default("PLANNING")
-  startDate   DateTime?
-  endDate     DateTime?
-  ownerId     String?
-  budget      Decimal? @db.Decimal(15, 2)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  description   String?
+  startDate     DateTime?
+  endDate       DateTime?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  tasks         ProjectTask[]
+
+  @@unique([tenantId, code])
   @@index([tenantId])
 }
 
 model ProjectTask {
-  id              String   @id @default(cuid())
-  tenantId        String
-  projectId       String
-  parentId        String?
-  assigneeId      String?
-  title           String
-  description     String?
-  status          String   @default("TODO")
-  priority        String   @default("MEDIUM")
-  dueDate         DateTime?
-  estimatedHours  Decimal? @db.Decimal(5, 2)
-  actualHours     Decimal? @db.Decimal(5, 2)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  projectId     String
+  parentId      String?
+  title         String
+  description   String?
+  assigneeId    String?
+  status        String   @default("TODO")
+  priority      String   @default("NORMAL")
+  startDate     DateTime?
+  dueDate       DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  project       Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([projectId])
+  @@index([status])
 }
 
 model DocumentTemplate {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String
-  category    String?
-  bodyHtml    String
-  variables   String[] @default([])
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  content       String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  instances     DocumentInstance[]
+
+  @@unique([tenantId, code])
   @@index([tenantId])
 }
 
 model DocumentInstance {
-  id          String   @id @default(cuid())
-  tenantId    String
-  templateId  String?
-  title       String
-  bodyHtml    String?
-  status      String   @default("DRAFT")
-  signedBy    String?
-  signedAt    DateTime?
-  expiresAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  templateId    String
+  title         String
+  payload       Json     @default("{}")
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  template      DocumentTemplate @relation(fields: [templateId], references: [id])
 
   @@index([tenantId])
+  @@index([templateId])
 }
 
-// WMS + SRM (loop #11)
 model Warehouse {
-  id        String   @id @default(cuid())
-  tenantId  String
-  code      String
-  name      String
-  address   String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  location      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  inventory     InventoryItem[]
+  movements     StockMovement[]
+
+  @@unique([tenantId, code])
   @@index([tenantId])
 }
 
@@ -1016,195 +811,185 @@ model InventoryItem {
   warehouseId   String
   sku           String
   name          String
-  description   String?
   uom           String   @default("EA")
-  quantity      Decimal  @default(0) @db.Decimal(15, 3)
-  reorderPoint  Decimal? @db.Decimal(15, 3)
-  unitCost      Decimal? @db.Decimal(15, 2)
+  quantity      Float    @default(0)
+  reorderPoint  Float    @default(0)
+  unitCost      Float    @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@unique([tenantId, warehouseId, sku])
+  warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@unique([tenantId, sku])
   @@index([tenantId])
   @@index([warehouseId])
 }
 
 model StockMovement {
-  id          String   @id @default(cuid())
-  tenantId    String
-  itemId      String
-  type        String
-  quantity    Decimal  @db.Decimal(15, 3)
-  unitCost    Decimal? @db.Decimal(15, 2)
-  reference   String?
-  occurredAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  warehouseId   String
+  itemId        String
+  type          String
+  quantity      Float
+  reference     String?
+  occurredAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
 
   @@index([tenantId])
+  @@index([warehouseId])
   @@index([itemId])
 }
 
 model SupplierScore {
-  id                     String   @id @default(cuid())
-  tenantId               String
-  vendorId               String
-  onTimeDeliveryRate     Decimal? @db.Decimal(5, 2)
-  qualityScore           Decimal? @db.Decimal(5, 2)
-  priceCompetitiveness   Decimal? @db.Decimal(5, 2)
-  totalScore             Decimal? @db.Decimal(5, 2)
-  periodStart            DateTime
-  periodEnd              DateTime
-  createdAt              DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  supplierId    String
+  score         Int
+  criteria      Json     @default("{}")
+  evaluatedAt   DateTime @default(now())
 
   @@index([tenantId])
+  @@index([supplierId])
 }
 
-// ITSM + FMS (loop #13)
 model Ticket {
-  id          String   @id @default(cuid())
-  tenantId    String
-  ticketNo    String
-  subject     String
-  description String?
-  status      String   @default("OPEN")
-  priority    String   @default("MEDIUM")
-  category    String?
-  reporterId  String?
-  assigneeId  String?
-  slaDueAt    DateTime?
-  resolvedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String
+  subject       String
+  description   String?
+  status        String   @default("OPEN")
+  priority      String   @default("NORMAL")
+  assigneeId    String?
+  reporterId    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@unique([tenantId, ticketNo])
+  @@unique([tenantId, code])
   @@index([tenantId])
-  @@index([tenantId, status])
+  @@index([status])
 }
 
 model Vehicle {
-  id                  String   @id @default(cuid())
-  tenantId            String
-  plateNo             String
-  model               String?
-  yearMade            Int?
-  fuelType            String?
-  assignedDriverId    String?
-  status              String   @default("ACTIVE")
-  lastMaintenanceAt   DateTime?
-  createdAt           DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  plateNo       String
+  model         String
+  type          String?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trips         VehicleTrip[]
 
   @@unique([tenantId, plateNo])
   @@index([tenantId])
 }
 
 model VehicleTrip {
-  id              String   @id @default(cuid())
-  tenantId        String
-  vehicleId       String
-  driverId        String?
-  startLocation   String?
-  endLocation     String?
-  startAt         DateTime
-  endAt           DateTime?
-  distance        Decimal? @db.Decimal(10, 2)
-  fuelUsed        Decimal? @db.Decimal(10, 2)
-  notes           String?
+  id            String   @id @default(cuid())
+  tenantId      String
+  vehicleId     String
+  driverId      String
+  startAt       DateTime
+  endAt         DateTime?
+  startKm       Int
+  endKm         Int?
+  purpose       String?
+  createdAt     DateTime @default(now())
+
+  vehicle       Vehicle @relation(fields: [vehicleId], references: [id])
 
   @@index([tenantId])
+  @@index([vehicleId])
 }
 
-// Endpoint + Backup (loop #12)
 model Device {
-  id          String   @id @default(cuid())
-  tenantId    String
-  userId      String?
-  type        String
-  os          String?
-  hostname    String?
-  macAddress  String?
-  ipAddress   String?
-  status      String   @default("ACTIVE")
-  lastSeenAt  DateTime?
-  enrolledAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  type          String
+  status        String   @default("ONLINE")
+  lastSeen      DateTime?
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  threats       ThreatEvent[]
 
   @@index([tenantId])
+  @@index([status])
 }
 
 model ThreatEvent {
-  id          String   @id @default(cuid())
-  tenantId    String
-  deviceId    String?
-  type        String
-  severity    String
-  description String
-  status      String   @default("OPEN")
-  detectedAt  DateTime @default(now())
-  resolvedAt  DateTime?
+  id            String   @id @default(cuid())
+  tenantId      String
+  deviceId      String
+  severity      String
+  type          String
+  description   String
+  detectedAt    DateTime @default(now())
+  resolvedAt    DateTime?
+
+  device        Device @relation(fields: [deviceId], references: [id])
 
   @@index([tenantId])
+  @@index([deviceId])
+  @@index([severity])
 }
 
 model BackupRecord {
-  id          String   @id @default(cuid())
-  tenantId    String
-  type        String
-  status      String   @default("PENDING")
-  sizeBytes   BigInt?
-  storageKey  String?
-  startedAt   DateTime @default(now())
-  completedAt DateTime?
-  expiresAt   DateTime?
+  id            String   @id @default(cuid())
+  tenantId      String
+  resource      String
+  status        String
+  size          Int      @default(0)
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  storageKey    String?
+  createdAt     DateTime @default(now())
 
   @@index([tenantId])
+  @@index([status])
 }
 
-// ============================================================================
-// GOVERNANCE + BI (loops #14-#15) — Phase 3
-// ============================================================================
-
-// CMP / PDPA (loop #14)
 model ConsentRecord {
   id            String   @id @default(cuid())
   tenantId      String
-  subjectType   String
   subjectId     String
-  subjectEmail  String?
-  type          String
-  grantedAt     DateTime @default(now())
-  expiresAt     DateTime?
-  ipAddress     String?
-  userAgent     String?
-  version       Int      @default(1)
-  withdrawnAt   DateTime?
+  purpose       String
+  granted       Boolean
+  source        String?
+  capturedAt    DateTime @default(now())
 
   @@index([tenantId])
-  @@index([tenantId, subjectType, subjectId])
-  @@index([tenantId, type])
+  @@index([subjectId])
 }
 
 model DataSubjectRequest {
-  id           String   @id @default(cuid())
-  tenantId     String
-  requestType  String
-  subjectEmail String
-  subjectName  String?
-  status       String   @default("PENDING")
-  receivedAt   DateTime @default(now())
-  dueAt        DateTime
-  completedAt  DateTime?
-  notes        String?
+  id            String   @id @default(cuid())
+  tenantId      String
+  subjectId     String
+  type          String
+  status        String   @default("RECEIVED")
+  dueDate       DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([tenantId])
-  @@index([tenantId, status])
+  @@index([status])
 }
 
 model CookieConsent {
-  id          String   @id @default(cuid())
-  tenantId    String
-  visitorId   String
-  categories  String[] @default([])
-  grantedAt   DateTime @default(now())
-  expiresAt   DateTime
-  version     Int      @default(1)
+  id            String   @id @default(cuid())
+  tenantId      String
+  visitorId     String
+  categories    Json     @default("{}")
+  capturedAt    DateTime @default(now())
 
   @@index([tenantId])
   @@index([visitorId])
@@ -1213,10 +998,9 @@ model CookieConsent {
 model PrivacyPolicy {
   id            String   @id @default(cuid())
   tenantId      String
-  version       Int
-  effectiveFrom DateTime
-  effectiveTo   DateTime?
-  bodyHtml      String
+  version       String
+  content       String
+  effectiveAt   DateTime
   createdAt     DateTime @default(now())
 
   @@unique([tenantId, version])
@@ -1224,71 +1008,75 @@ model PrivacyPolicy {
 }
 
 model DataBreachIncident {
-  id               String   @id @default(cuid())
-  tenantId         String
-  discoveredAt     DateTime @default(now())
-  reportedAt       DateTime?
-  severity         String
-  description      String
-  affectedRecords  Int?
-  status           String   @default("INVESTIGATING")
-  remediationNotes String?
+  id            String   @id @default(cuid())
+  tenantId      String
+  severity      String
+  description   String
+  affectedCount Int      @default(0)
+  detectedAt    DateTime @default(now())
+  reportedAt    DateTime?
+  resolvedAt    DateTime?
 
   @@index([tenantId])
+  @@index([severity])
 }
 
-// BI (loop #15)
 model Dashboard {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String
-  description String?
-  layout      Json     @default("[]")
-  isPublic    Boolean  @default(false)
-  ownerId     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  layout        Json     @default("{}")
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  snapshots     ReportSnapshot[]
 
   @@index([tenantId])
 }
 
 model ReportSnapshot {
-  id          String   @id @default(cuid())
-  tenantId    String
-  dashboardId String?
-  name        String
-  parameters  Json     @default("{}")
-  data        Json     @default("{}")
-  generatedAt DateTime @default(now())
-  expiresAt   DateTime?
+  id            String   @id @default(cuid())
+  tenantId      String
+  dashboardId   String
+  data          Json
+  generatedAt   DateTime @default(now())
+
+  dashboard     Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([dashboardId])
 }
 
 model KpiDefinition {
-  id           String   @id @default(cuid())
-  tenantId     String
-  name         String
-  code         String
-  sqlQuery     String?
-  unit         String?
-  targetValue  Decimal? @db.Decimal(20, 4)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  unit          String?
+  query         String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  snapshots     KpiSnapshot[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
 }
 
 model KpiSnapshot {
-  id         String   @id @default(cuid())
-  tenantId   String
-  kpiId      String
-  value      Decimal  @db.Decimal(20, 4)
-  snapshotAt DateTime @default(now())
-  period     String?
+  id            String   @id @default(cuid())
+  tenantId      String
+  kpiId         String
+  period        DateTime @db.Date
+  value         Float
+  metadata      Json     @default("{}")
+  capturedAt    DateTime @default(now())
+
+  kpi           KpiDefinition @relation(fields: [kpiId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
-  @@index([kpiId, snapshotAt])
+  @@index([kpiId])
+  @@index([period])
 }

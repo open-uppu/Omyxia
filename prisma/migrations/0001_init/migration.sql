@@ -323,7 +323,7 @@ CREATE TABLE "AuditLog" (
   id TEXT PRIMARY KEY,
   "tenantId" TEXT,
   "userId" TEXT,
-  table TEXT NOT NULL,
+  "table" TEXT NOT NULL,
   "rowId" TEXT,
   action "AuditAction" NOT NULL,
   before JSONB,
@@ -335,7 +335,7 @@ CREATE TABLE "AuditLog" (
 
 CREATE INDEX idx_audit_tenant_created ON "AuditLog"("tenantId", "createdAt");
 CREATE INDEX idx_audit_user_created ON "AuditLog"("userId", "createdAt");
-CREATE INDEX idx_audit_table_row ON "AuditLog"(table, "rowId");
+CREATE INDEX idx_audit_table_row ON "AuditLog"("table", "rowId");
 
 -- Audit log: tenant-scoped (super_admin can see all via bypass)
 ALTER TABLE "AuditLog" ENABLE ROW LEVEL SECURITY;

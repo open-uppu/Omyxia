@@ -20,7 +20,7 @@
     "noFallthroughCasesInSwitch": false,
     "resolveJsonModule": true,
     "paths": {
-      "@open-uppu/shared-types": ["../../packages/shared-types/src"]
+      "@omyxia/shared-types": ["../../packages/shared-types/src"]
     }
   },
   "include": ["src/**/*", "test/**/*"],

@@ -97,7 +97,7 @@ CREATE TABLE "Dashboard" (
   id TEXT PRIMARY KEY,
   "tenantId" TEXT NOT NULL REFERENCES "Tenant"(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  description TEXT?,
+  description TEXT,
   layout JSONB NOT NULL DEFAULT '[]',
   "isPublic" BOOLEAN NOT NULL DEFAULT false,
   "ownerId" TEXT,

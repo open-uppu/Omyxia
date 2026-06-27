@@ -1,8 +1,8 @@
 {
-  "name": "open-uppu",
+  "name": "omyxia",
   "version": "0.1.0",
   "private": true,
-  "description": "Multi-tenant Enterprise IT Master Blueprint (SaaS) — OSS-first, RLS-enforced tenant isolation",
+  "description": "Omyxia — Multi-tenant Enterprise IT Master Blueprint (SaaS) — OSS-first, RLS-enforced tenant isolation",
   "license": "AGPL-3.0",
   "engines": {
     "node": ">=20.0.0",
@@ -15,9 +15,9 @@
     "type-check": "turbo run type-check",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
-    "db:migrate": "pnpm --filter @open-uppu/prisma migrate deploy",
-    "db:seed": "pnpm --filter @open-uppu/prisma db:seed",
-    "db:studio": "pnpm --filter @open-uppu/prisma studio"
+    "db:migrate": "pnpm --filter @omyxia/prisma migrate deploy",
+    "db:seed": "pnpm --filter @omyxia/prisma db:seed",
+    "db:studio": "pnpm --filter @omyxia/prisma studio"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

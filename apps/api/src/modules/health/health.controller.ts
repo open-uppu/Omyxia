@@ -6,7 +6,7 @@ export class HealthController {
   health() {
     return {
       status: 'ok',
-      service: 'open-uppu-api',
+      service: 'omyxia-api',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     };
@@ -16,7 +16,7 @@ export class HealthController {
   ready() {
     return {
       status: 'ready',
-      service: 'open-uppu-api',
+      service: 'omyxia-api',
       version: '0.1.0',
     };
   }

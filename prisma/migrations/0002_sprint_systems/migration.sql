@@ -5,6 +5,24 @@
 -- HRM CORE ADDITIONS (loop #6)
 -- ============================================================================
 
+-- NEW ENUMS
+-- ============================================================================
+
+CREATE TYPE "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'LEAVE', 'HOLIDAY');
+CREATE TYPE "LeaveType" AS ENUM ('VACATION', 'SICK', 'PERSONAL', 'MATERNITY', 'PATERNITY', 'UNPAID', 'OTHER');
+CREATE TYPE "LeaveStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
+CREATE TYPE "PayrollStatus" AS ENUM ('DRAFT', 'APPROVED', 'PAID', 'CANCELLED');
+CREATE TYPE "JournalStatus" AS ENUM ('DRAFT', 'REVIEW', 'POSTED', 'REVERSED');
+CREATE TYPE "FiscalPeriodStatus" AS ENUM ('OPEN', 'CLOSED', 'LOCKED');
+CREATE TYPE "TaxType" AS ENUM ('VAT', 'OUTPUT_VAT', 'INPUT_VAT', 'WHT_1', 'WHT_2', 'WHT_3', 'WHT_5', 'STAMP_DUTY');
+CREATE TYPE "ArInvoiceStatus" AS ENUM ('DRAFT', 'SENT', 'PARTIAL', 'PAID', 'OVERDUE', 'VOID');
+CREATE TYPE "ApBillStatus" AS ENUM ('DRAFT', 'APPROVED', 'PARTIAL', 'PAID', 'OVERDUE', 'VOID');
+CREATE TYPE "CrmLeadStatus" AS ENUM ('NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST');
+CREATE TYPE "CrmActivityType" AS ENUM ('CALL', 'EMAIL', 'MEETING', 'TASK', 'NOTE');
+CREATE TYPE "EmailStatus" AS ENUM ('DRAFT', 'QUEUED', 'SENT', 'DELIVERED', 'BOUNCED', 'FAILED');
+CREATE TYPE "ChatChannelType" AS ENUM ('PUBLIC', 'PRIVATE', 'DIRECT');
+CREATE TYPE "ChatMemberRole" AS ENUM ('OWNER', 'ADMIN', 'MEMBER', 'GUEST');
+
 CREATE TABLE "AttendanceRecord" (
   id TEXT PRIMARY KEY,
   "tenantId" TEXT NOT NULL REFERENCES "Tenant"(id) ON DELETE CASCADE,
@@ -462,24 +480,6 @@ ALTER TABLE "FileItem" ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation ON "FileItem" USING ("tenantId" = current_tenant_id());
 
 -- ============================================================================
--- NEW ENUMS
--- ============================================================================
-
-CREATE TYPE "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'LEAVE', 'HOLIDAY');
-CREATE TYPE "LeaveType" AS ENUM ('VACATION', 'SICK', 'PERSONAL', 'MATERNITY', 'PATERNITY', 'UNPAID', 'OTHER');
-CREATE TYPE "LeaveStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
-CREATE TYPE "PayrollStatus" AS ENUM ('DRAFT', 'APPROVED', 'PAID', 'CANCELLED');
-CREATE TYPE "JournalStatus" AS ENUM ('DRAFT', 'REVIEW', 'POSTED', 'REVERSED');
-CREATE TYPE "FiscalPeriodStatus" AS ENUM ('OPEN', 'CLOSED', 'LOCKED');
-CREATE TYPE "TaxType" AS ENUM ('VAT', 'OUTPUT_VAT', 'INPUT_VAT', 'WHT_1', 'WHT_2', 'WHT_3', 'WHT_5', 'STAMP_DUTY');
-CREATE TYPE "ArInvoiceStatus" AS ENUM ('DRAFT', 'SENT', 'PARTIAL', 'PAID', 'OVERDUE', 'VOID');
-CREATE TYPE "ApBillStatus" AS ENUM ('DRAFT', 'APPROVED', 'PARTIAL', 'PAID', 'OVERDUE', 'VOID');
-CREATE TYPE "CrmLeadStatus" AS ENUM ('NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST');
-CREATE TYPE "CrmActivityType" AS ENUM ('CALL', 'EMAIL', 'MEETING', 'TASK', 'NOTE');
-CREATE TYPE "EmailStatus" AS ENUM ('DRAFT', 'QUEUED', 'SENT', 'DELIVERED', 'BOUNCED', 'FAILED');
-CREATE TYPE "ChatChannelType" AS ENUM ('PUBLIC', 'PRIVATE', 'DIRECT');
-CREATE TYPE "ChatMemberRole" AS ENUM ('OWNER', 'ADMIN', 'MEMBER', 'GUEST');
-
 -- ============================================================================
 -- SUMMARY
 -- ============================================================================

@@ -1156,3 +1156,139 @@ model BackupRecord {
 
   @@index([tenantId])
 }
+
+// ============================================================================
+// GOVERNANCE + BI (loops #14-#15) — Phase 3
+// ============================================================================
+
+// CMP / PDPA (loop #14)
+model ConsentRecord {
+  id            String   @id @default(cuid())
+  tenantId      String
+  subjectType   String
+  subjectId     String
+  subjectEmail  String?
+  type          String
+  grantedAt     DateTime @default(now())
+  expiresAt     DateTime?
+  ipAddress     String?
+  userAgent     String?
+  version       Int      @default(1)
+  withdrawnAt   DateTime?
+
+  @@index([tenantId])
+  @@index([tenantId, subjectType, subjectId])
+  @@index([tenantId, type])
+}
+
+model DataSubjectRequest {
+  id           String   @id @default(cuid())
+  tenantId     String
+  requestType  String
+  subjectEmail String
+  subjectName  String?
+  status       String   @default("PENDING")
+  receivedAt   DateTime @default(now())
+  dueAt        DateTime
+  completedAt  DateTime?
+  notes        String?
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model CookieConsent {
+  id          String   @id @default(cuid())
+  tenantId    String
+  visitorId   String
+  categories  String[] @default([])
+  grantedAt   DateTime @default(now())
+  expiresAt   DateTime
+  version     Int      @default(1)
+
+  @@index([tenantId])
+  @@index([visitorId])
+}
+
+model PrivacyPolicy {
+  id            String   @id @default(cuid())
+  tenantId      String
+  version       Int
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  bodyHtml      String
+  createdAt     DateTime @default(now())
+
+  @@unique([tenantId, version])
+  @@index([tenantId])
+}
+
+model DataBreachIncident {
+  id               String   @id @default(cuid())
+  tenantId         String
+  discoveredAt     DateTime @default(now())
+  reportedAt       DateTime?
+  severity         String
+  description      String
+  affectedRecords  Int?
+  status           String   @default("INVESTIGATING")
+  remediationNotes String?
+
+  @@index([tenantId])
+}
+
+// BI (loop #15)
+model Dashboard {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  layout      Json     @default("[]")
+  isPublic    Boolean  @default(false)
+  ownerId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model ReportSnapshot {
+  id          String   @id @default(cuid())
+  tenantId    String
+  dashboardId String?
+  name        String
+  parameters  Json     @default("{}")
+  data        Json     @default("{}")
+  generatedAt DateTime @default(now())
+  expiresAt   DateTime?
+
+  @@index([tenantId])
+  @@index([dashboardId])
+}
+
+model KpiDefinition {
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String
+  code         String
+  sqlQuery     String?
+  unit         String?
+  targetValue  Decimal? @db.Decimal(20, 4)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model KpiSnapshot {
+  id         String   @id @default(cuid())
+  tenantId   String
+  kpiId      String
+  value      Decimal  @db.Decimal(20, 4)
+  snapshotAt DateTime @default(now())
+  period     String?
+
+  @@index([tenantId])
+  @@index([kpiId, snapshotAt])
+}

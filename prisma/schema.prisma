@@ -1,5 +1,6 @@
 // open-uppu — Multi-tenant Enterprise IT Master Blueprint
 // Phase 1 (SME): Tenant + User + Employee + Department + Position + ChartOfAccounts (basic)
+// Phase 1+ (Sprint): + Email + Chat + File Share + CRM + ERP core + HRM core
 
 generator client {
   provider        = "prisma-client-js"
@@ -14,7 +15,7 @@ datasource db {
 }
 
 // ============================================================================
-// TENANT + USER
+// TENANT + USER (loop #2)
 // ============================================================================
 
 model Tenant {
@@ -34,22 +35,34 @@ model Tenant {
   accounts     ChartOfAccounts[]
   invoices     Invoice[]
   vendors      Vendor[]
+  customers    Customer[]
+  emailMessages EmailMessage[]
+  emailTemplates EmailTemplate[]
+  chatChannels ChatChannel[]
+  files        FileItem[]
+  fileFolders  FileFolder[]
+  crmLeads     CrmLead[]
+  crmActivities CrmActivity[]
+  crmPipelines CrmPipeline[]
+  arInvoices   ArInvoice[]
+  apBills      ApBill[]
+  taxRates     TaxRate[]
+  taxTransactions TaxTransaction[]
+  journals     JournalEntry[]
+  fiscalPeriods FiscalPeriod[]
+  attendanceRecords AttendanceRecord[]
+  leaveRequests LeaveRequest[]
+  payrollPeriods PayrollPeriod[]
+  payrollLines  PayrollLine[]
+  leaveQuotas   LeaveQuota[]
+  attendances   AttendanceRecord[]
 
   @@index([slug])
   @@index([status])
 }
 
-enum TenantPlan {
-  STARTER
-  GROWTH
-  ENTERPRISE
-}
-
-enum TenantStatus {
-  ACTIVE
-  SUSPENDED
-  ARCHIVED
-}
+enum TenantPlan { STARTER GROWTH ENTERPRISE }
+enum TenantStatus { ACTIVE SUSPENDED ARCHIVED }
 
 model User {
   id            String   @id @default(cuid())
@@ -67,6 +80,13 @@ model User {
   employees     Employee[]
   sessions      UserSession[]
   mfaFactors    MfaFactor[]
+  sentEmails    EmailMessage[] @relation("Sender")
+  chatMessages  ChatMessage[]
+  chatMemberships ChatChannelMember[]
+  fileUploads   FileItem[]
+  createdFiles  FileFolder[]
+  crmLeads      CrmLead[] @relation("LeadOwner")
+  crmActivities CrmActivity[]
 
   @@index([email])
 }
@@ -87,14 +107,7 @@ model UserTenant {
   @@index([tenantId])
 }
 
-enum TenantRole {
-  OWNER
-  ADMIN
-  HR_MANAGER
-  ACCOUNTANT
-  MANAGER
-  MEMBER
-}
+enum TenantRole { OWNER ADMIN HR_MANAGER ACCOUNTANT MANAGER MEMBER SALES_REP SUPPORT_AGENT WAREHOUSE_MANAGER }
 
 model UserSession {
   id          String   @id @default(cuid())
@@ -114,7 +127,7 @@ model UserSession {
 }
 
 // ============================================================================
-// HRM (Phase 1 — basic employee + org)
+// HRM (loop #2 + loop #6)
 // ============================================================================
 
 model Employee {
@@ -136,16 +149,21 @@ model Employee {
   departmentId    String?
   positionId      String?
   managerId       String?
+  baseSalary      Decimal? @db.Decimal(15, 2)
   status          EmployeeStatus @default(ACTIVE)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  department  Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  position    Position?   @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  manager     Employee?   @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
-  reports     Employee[]  @relation("EmployeeManager")
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  department      Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  position        Position?   @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  manager         Employee?   @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
+  reports         Employee[]  @relation("EmployeeManager")
+  attendances     AttendanceRecord[]
+  leaveRequests   LeaveRequest[]
+  leaveQuotas     LeaveQuota[]
+  payrollLines    PayrollLine[]
 
   @@unique([tenantId, employeeNo])
   @@unique([tenantId, email])
@@ -156,18 +174,8 @@ model Employee {
   @@index([tenantId, managerId])
 }
 
-enum EmploymentType {
-  FULL_TIME
-  PART_TIME
-  CONTRACT
-  INTERN
-}
-
-enum EmployeeStatus {
-  ACTIVE
-  ON_LEAVE
-  TERMINATED
-}
+enum EmploymentType { FULL_TIME PART_TIME CONTRACT INTERN }
+enum EmployeeStatus { ACTIVE ON_LEAVE TERMINATED }
 
 model Department {
   id          String   @id @default(cuid())
@@ -205,8 +213,121 @@ model Position {
   @@index([tenantId])
 }
 
+// HRM core additions (loop #6)
+model AttendanceRecord {
+  id          String   @id @default(cuid())
+  tenantId    String
+  employeeId  String
+  date        DateTime
+  clockIn     DateTime?
+  clockOut    DateTime?
+  hoursWorked Decimal? @db.Decimal(5, 2)
+  status      AttendanceStatus @default(PRESENT)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, employeeId, date])
+  @@index([tenantId])
+  @@index([tenantId, date])
+}
+
+enum AttendanceStatus { PRESENT ABSENT LATE HALF_DAY LEAVE HOLIDAY }
+
+model LeaveRequest {
+  id          String   @id @default(cuid())
+  tenantId    String
+  employeeId  String
+  leaveType   LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  days        Int
+  reason      String?
+  status      LeaveStatus @default(PENDING)
+  approverId  String?
+  approvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, employeeId])
+}
+
+enum LeaveType { VACATION SICK PERSONAL MATERNITY PATERNITY UNPAID OTHER }
+enum LeaveStatus { PENDING APPROVED REJECTED CANCELLED }
+
+model LeaveQuota {
+  id          String   @id @default(cuid())
+  tenantId    String
+  employeeId  String
+  leaveType   LeaveType
+  year        Int
+  quotaDays   Int
+  usedDays    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, employeeId, leaveType, year])
+  @@index([tenantId])
+}
+
+model PayrollPeriod {
+  id          String   @id @default(cuid())
+  tenantId    String
+  periodStart DateTime
+  periodEnd   DateTime
+  status      PayrollStatus @default(DRAFT)
+  approvedBy  String?
+  approvedAt  DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines       PayrollLine[]
+
+  @@unique([tenantId, periodStart])
+  @@index([tenantId, status])
+}
+
+enum PayrollStatus { DRAFT APPROVED PAID CANCELLED }
+
+model PayrollLine {
+  id          String   @id @default(cuid())
+  tenantId    String
+  periodId    String
+  employeeId  String
+  baseSalary  Decimal  @db.Decimal(15, 2)
+  overtime    Decimal  @default(0) @db.Decimal(15, 2)
+  bonus       Decimal  @default(0) @db.Decimal(15, 2)
+  allowances  Decimal  @default(0) @db.Decimal(15, 2)
+  deductions  Decimal  @default(0) @db.Decimal(15, 2)
+  tax         Decimal  @default(0) @db.Decimal(15, 2)
+  socialSecurity Decimal @default(0) @db.Decimal(15, 2)
+  netPay      Decimal  @db.Decimal(15, 2)
+  details     Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  period      PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  employee    Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([periodId, employeeId])
+  @@index([tenantId])
+  @@index([tenantId, periodId])
+}
+
 // ============================================================================
-// ERP (Phase 1 — basic GL chart of accounts)
+// ERP (loop #2 + loop #5)
 // ============================================================================
 
 model ChartOfAccounts {
@@ -227,6 +348,7 @@ model ChartOfAccounts {
   tenant          Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   parent          ChartOfAccounts? @relation("AccountTree", fields: [parentId], references: [id], onDelete: SetNull)
   children        ChartOfAccounts[] @relation("AccountTree")
+  journalLines    JournalLine[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -234,17 +356,107 @@ model ChartOfAccounts {
   @@index([tenantId, parentId])
 }
 
-enum AccountType {
-  ASSET
-  LIABILITY
-  EQUITY
-  REVENUE
-  EXPENSE
+enum AccountType { ASSET LIABILITY EQUITY REVENUE EXPENSE }
+enum NormalBalance { DEBIT CREDIT }
+
+model JournalEntry {
+  id          String   @id @default(cuid())
+  tenantId    String
+  entryNo     String
+  date        DateTime
+  description String
+  reference   String?
+  status      JournalStatus @default(DRAFT)
+  approvedBy  String?
+  approvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines       JournalLine[]
+
+  @@unique([tenantId, entryNo])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, date])
 }
 
-enum NormalBalance {
-  DEBIT
-  CREDIT
+enum JournalStatus { DRAFT REVIEW POSTED REVERSED }
+
+model JournalLine {
+  id          String   @id @default(cuid())
+  tenantId    String
+  entryId     String
+  accountId   String
+  debit       Decimal  @default(0) @db.Decimal(15, 2)
+  credit      Decimal  @default(0) @db.Decimal(15, 2)
+  description String?
+  costCenter  String?
+  project     String?
+  createdAt   DateTime @default(now())
+
+  entry       JournalEntry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  account     ChartOfAccounts @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([entryId])
+}
+
+model FiscalPeriod {
+  id          String   @id @default(cuid())
+  tenantId    String
+  startDate   DateTime
+  endDate     DateTime
+  status      FiscalPeriodStatus @default(OPEN)
+  closedAt    DateTime?
+  closedBy    String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, startDate])
+  @@index([tenantId])
+}
+
+enum FiscalPeriodStatus { OPEN CLOSED LOCKED }
+
+model TaxRate {
+  id          String   @id @default(cuid())
+  tenantId    String
+  type        TaxType
+  name        String
+  rate        Decimal  @db.Decimal(5, 2)
+  effectiveFrom DateTime
+  effectiveTo DateTime?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions TaxTransaction[]
+
+  @@unique([tenantId, type, effectiveFrom])
+  @@index([tenantId])
+}
+
+enum TaxType { VAT OUTPUT_VAT INPUT_VAT WHT_1 WHT_2 WHT_3 WHT_5 STAMP_DUTY }
+
+model TaxTransaction {
+  id            String   @id @default(cuid())
+  tenantId      String
+  taxRateId     String
+  sourceType    String   // 'INVOICE' | 'BILL' | 'PAYMENT'
+  sourceId      String
+  baseAmount    Decimal  @db.Decimal(15, 2)
+  taxAmount     Decimal  @db.Decimal(15, 2)
+  certificateNo String?
+  filedAt       DateTime?
+  createdAt     DateTime @default(now())
+
+  tenant        Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  taxRate       TaxRate @relation(fields: [taxRateId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, sourceType, sourceId])
+  @@index([tenantId, filedAt])
 }
 
 model Vendor {
@@ -262,30 +474,53 @@ model Vendor {
   updatedAt   DateTime @updatedAt
 
   tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoices    Invoice[]
+  apBills     ApBill[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
 }
 
-model Invoice {
+model Customer {
   id          String   @id @default(cuid())
   tenantId    String
-  vendorId    String?
-  customerName String
+  code        String
+  name        String
+  taxId       String?
+  email       String?
+  phone       String?
+  address     String?
+  creditLimit Decimal  @default(0) @db.Decimal(15, 2)
+  paymentTerms Int     @default(30)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  arInvoices  ArInvoice[]
+  crmLeads    CrmLead[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model ArInvoice {
+  id          String   @id @default(cuid())
+  tenantId    String
+  customerId  String?
   invoiceNo   String
-  type        InvoiceType @default(AP)
-  status      InvoiceStatus @default(DRAFT)
   invoiceDate DateTime
   dueDate     DateTime
-  total       Decimal  @db.Decimal(15, 2)
+  subtotal    Decimal  @db.Decimal(15, 2)
   taxAmount   Decimal  @default(0) @db.Decimal(15, 2)
+  total       Decimal  @db.Decimal(15, 2)
+  paidAmount  Decimal  @default(0) @db.Decimal(15, 2)
+  status      ArInvoiceStatus @default(DRAFT)
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  vendor      Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, invoiceNo])
   @@index([tenantId])
@@ -293,22 +528,265 @@ model Invoice {
   @@index([tenantId, dueDate])
 }
 
-enum InvoiceType {
-  AP
-  AR
+enum ArInvoiceStatus { DRAFT SENT PARTIAL PAID OVERDUE VOID }
+
+model ApBill {
+  id          String   @id @default(cuid())
+  tenantId    String
+  vendorId    String
+  billNo      String
+  billDate    DateTime
+  dueDate     DateTime
+  subtotal    Decimal  @db.Decimal(15, 2)
+  taxAmount   Decimal  @default(0) @db.Decimal(15, 2)
+  whtAmount   Decimal  @default(0) @db.Decimal(15, 2)
+  total       Decimal  @db.Decimal(15, 2)
+  paidAmount  Decimal  @default(0) @db.Decimal(15, 2)
+  status      ApBillStatus @default(DRAFT)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vendor      Vendor  @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, billNo])
+  @@index([tenantId])
+  @@index([tenantId, status])
 }
 
-enum InvoiceStatus {
-  DRAFT
-  SENT
-  PARTIAL
-  PAID
-  OVERDUE
-  VOID
+enum ApBillStatus { DRAFT APPROVED PARTIAL PAID OVERDUE VOID }
+
+// ============================================================================
+// CRM (loop #7)
+// ============================================================================
+
+model CrmPipeline {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  stages      Json     @default("[]") // array of stage names
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads       CrmLead[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model CrmLead {
+  id          String   @id @default(cuid())
+  tenantId    String
+  customerId  String?
+  ownerId     String?
+  pipelineId  String?
+  stage       String?
+  source      String?
+  name        String
+  company     String?
+  email       String?
+  phone       String?
+  value       Decimal  @default(0) @db.Decimal(15, 2)
+  probability Int      @default(0)
+  status      CrmLeadStatus @default(NEW)
+  expectedCloseDate DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer    Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  owner       User?       @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  pipeline    CrmPipeline? @relation(fields: [pipelineId], references: [id], onDelete: SetNull)
+  activities  CrmActivity[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, stage])
+  @@index([tenantId, ownerId])
+}
+
+enum CrmLeadStatus { NEW CONTACTED QUALIFIED PROPOSAL NEGOTIATION WON LOST }
+
+model CrmActivity {
+  id          String   @id @default(cuid())
+  tenantId    String
+  leadId      String?
+  userId      String
+  type        CrmActivityType
+  subject     String
+  description String?
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead        CrmLead? @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, leadId])
+  @@index([tenantId, completedAt])
+}
+
+enum CrmActivityType { CALL EMAIL MEETING TASK NOTE }
+
+// ============================================================================
+// WORKSPACE (loop #4)
+// ============================================================================
+
+model EmailMessage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  senderId    String?
+  fromAddress String
+  toAddresses String[]
+  ccAddresses String[] @default([])
+  bccAddresses String[] @default([])
+  subject     String
+  bodyHtml    String?
+  bodyText    String?
+  status      EmailStatus @default(DRAFT)
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sender      User?  @relation("Sender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, sentAt])
+}
+
+enum EmailStatus { DRAFT QUEUED SENT DELIVERED BOUNCED FAILED }
+
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  subject     String
+  bodyHtml    String
+  variables   String[] @default([])
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model ChatChannel {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  type        ChatChannelType @default(PUBLIC)
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members     ChatChannelMember[]
+  messages    ChatMessage[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+enum ChatChannelType { PUBLIC PRIVATE DIRECT }
+
+model ChatChannelMember {
+  id          String   @id @default(cuid())
+  tenantId    String
+  channelId   String
+  userId      String
+  role        ChatMemberRole @default(MEMBER)
+  lastReadAt  DateTime?
+  joinedAt    DateTime @default(now())
+
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+enum ChatMemberRole { OWNER ADMIN MEMBER GUEST }
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  channelId   String
+  senderId    String
+  content     String
+  parentId    String?
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  sender      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([channelId, createdAt])
+  @@index([senderId])
+}
+
+model FileFolder {
+  id          String   @id @default(cuid())
+  tenantId    String
+  parentId    String?
+  ownerId     String?
+  name        String
+  path        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent      FileFolder? @relation("FolderTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    FileFolder[] @relation("FolderTree")
+  files       FileItem[]
+  owner       User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, parentId, name])
+  @@index([tenantId])
+  @@index([tenantId, parentId])
+}
+
+model FileItem {
+  id          String   @id @default(cuid())
+  tenantId    String
+  folderId    String?
+  ownerId     String?
+  name        String
+  mimeType    String
+  size        BigInt
+  storageKey  String
+  version     Int      @default(1)
+  checksum    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  folder      FileFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  owner       User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, folderId])
+  @@index([tenantId, ownerId])
 }
 
 // ============================================================================
-// IAM (Phase 1 — basic MFA + audit)
+// IAM (loop #2 + loop #3)
 // ============================================================================
 
 model MfaFactor {
@@ -327,11 +805,7 @@ model MfaFactor {
   @@index([userId, type])
 }
 
-enum MfaType {
-  TOTP
-  SMS
-  EMAIL
-}
+enum MfaType { TOTP SMS EMAIL }
 
 model AuditLog {
   id          String   @id @default(cuid())
@@ -351,15 +825,4 @@ model AuditLog {
   @@index([table, rowId])
 }
 
-enum AuditAction {
-  CREATE
-  UPDATE
-  DELETE
-  LOGIN
-  LOGOUT
-  PERMISSION_CHANGE
-  ROLE_ASSIGN
-  MFA_CHALLENGE
-  PASSWORD_RESET
-  SUSPICIOUS_ACTIVITY
-}
+enum AuditAction { CREATE UPDATE DELETE LOGIN LOGOUT PERMISSION_CHANGE ROLE_ASSIGN MFA_CHALLENGE PASSWORD_RESET SUSPICIOUS_ACTIVITY }

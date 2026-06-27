@@ -15,38 +15,58 @@ export class EmailService {
     return tid;
   }
 
-  async listMessages(folder: string = 'inbox') {
-    // Stub: returns draft messages
+  async sendEmail(data: { to: string | string[]; subject: string; body?: string; bodyHtml?: string; bodyText?: string }) {
+    return this.prisma.emailMessage.create({
+      data: {
+        tenantId: this.getTenantId(),
+        folder: 'SENT',
+        from: 'noreply@openuppu.local',
+        to: Array.isArray(data.to) ? data.to.join(',') : data.to,
+        subject: data.subject,
+        body: data.body ?? data.bodyText ?? data.bodyHtml ?? '',
+      },
+    });
+  }
+
+  async listInbox() {
     return this.prisma.emailMessage.findMany({
-      where: { tenantId: this.getTenantId(), status: 'SENT' },
-      orderBy: { createdAt: 'desc' },
+      where: { tenantId: this.getTenantId(), folder: 'INBOX' },
+      orderBy: { receivedAt: 'desc' },
+      take: 50,
+    });
+  }
+
+  async getMessage(id: string) {
+    return this.prisma.emailMessage.findFirst({
+      where: { id, tenantId: this.getTenantId() },
+    });
+  }
+
+  async listMessages(folder: string = 'INBOX') {
+    return this.prisma.emailMessage.findMany({
+      where: { tenantId: this.getTenantId(), folder: folder.toUpperCase() },
+      orderBy: { receivedAt: 'desc' },
       take: 50,
     });
   }
 
   async send(data: { to: string[]; subject: string; bodyHtml?: string; bodyText?: string }) {
-    return this.prisma.emailMessage.create({
-      data: {
-        tenantId: this.getTenantId(),
-        senderId: this.tenantContext.getUserId(),
-        fromAddress: 'noreply@openuppu.local',
-        toAddresses: data.to,
-        subject: data.subject,
-        bodyHtml: data.bodyHtml,
-        bodyText: data.bodyText,
-        status: 'SENT',
-        sentAt: new Date(),
-      },
-    });
+    return this.sendEmail(data);
   }
 
   async listTemplates() {
     return this.prisma.emailTemplate.findMany({ where: { tenantId: this.getTenantId() } });
   }
 
-  async createTemplate(data: { name: string; subject: string; bodyHtml: string; variables?: string[] }) {
+  async createTemplate(data: { code?: string; name: string; subject: string; body?: string; bodyHtml?: string }) {
     return this.prisma.emailTemplate.create({
-      data: { ...data, variables: data.variables || [], tenantId: this.getTenantId() },
+      data: {
+        tenantId: this.getTenantId(),
+        code: data.code ?? data.name.toLowerCase().replace(/\s+/g, '-'),
+        name: data.name,
+        subject: data.subject,
+        body: data.body ?? data.bodyHtml ?? '',
+      },
     });
   }
 }

@@ -1,0 +1,27 @@
+{
+  "name": "open-uppu",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-tenant Enterprise IT Master Blueprint (SaaS) — OSS-first, RLS-enforced tenant isolation",
+  "license": "AGPL-3.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "db:migrate": "pnpm --filter @open-uppu/prisma migrate deploy",
+    "db:seed": "pnpm --filter @open-uppu/prisma db:seed",
+    "db:studio": "pnpm --filter @open-uppu/prisma studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "pnpm@10.33.2"
+}

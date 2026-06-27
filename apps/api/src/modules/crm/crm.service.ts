@@ -46,6 +46,10 @@ export class CrmService {
     return this.prisma.crmLead.update({ where: { id }, data: { stage } });
   }
 
+  async deleteLead(id: string) {
+    return this.prisma.crmLead.delete({ where: { id } });
+  }
+
   async listActivities(leadId?: string) {
     return this.prisma.crmActivity.findMany({
       where: {

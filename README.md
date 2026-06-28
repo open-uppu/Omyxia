@@ -26,6 +26,39 @@
 
 ---
 
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="Omyxia Dashboard" width="90%">
+</p>
+
+<p align="center">
+  <em>Multi-tenant BI dashboard — KPIs, revenue trend, activity feed — Thai-first by design.</em>
+</p>
+
+---
+
+## 📸 Screenshots
+
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/login.png" alt="Login" width="100%"><br>
+      <sub><b>Login & SSO</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/crm-pipeline.png" alt="CRM Pipeline" width="100%"><br>
+      <sub><b>CRM Pipeline (Kanban)</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="docs/screenshots/hrm-employee.png" alt="HRM Employee Profile" width="60%"><br>
+      <sub><b>HRM Employee Profile (Thai + English, ฿ salary, leave quotas, attendance)</b></sub>
+    </td>
+  </tr>
+</table>
+
+---
+
 ## ✨ What is Omyxia?
 
 Omyxia is an **open-source, self-hostable Enterprise IT platform** that replaces 14 fragmented business tools with one cohesive multi-tenant SaaS.

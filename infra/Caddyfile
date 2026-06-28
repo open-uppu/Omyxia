@@ -1,0 +1,64 @@
+# Omyxia Production Caddyfile
+# - Domain mode: auto-TLS via Let's Encrypt
+# - Localhost mode: self-signed fallback
+
+# Production domain
+{$DOMAIN:localhost} {
+    encode zstd gzip
+
+    # Rate limiting at edge
+    @tooManyRequests rate_limit zone=default_rl burst=100r/s;
+    respond @tooManyRequests 429;
+
+    # API reverse proxy
+    reverse_proxy /api/* api:3001 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # WebSocket support (realtime)
+    reverse_proxy /realtime/* api:3001
+
+    # Frontend reverse proxy
+    reverse_proxy web:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Security headers
+    header {
+        # HSTS - 1 year, include subdomains
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Content Security Policy
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' wss: https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        # Prevent MIME-sniffing
+        X-Content-Type-Options "nosniff"
+        # Clickjacking protection
+        X-Frame-Options "DENY"
+        # Referrer policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Permissions policy
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+        # Remove Server header
+        -Server
+    }
+
+    # Logging
+    log {
+        output file /data/access.log {
+            roll_size 100mb
+            roll_keep 5
+        }
+        format json
+    }
+}
+
+# Rate limit zone (shared across all sites)
+(rate_limit) {
+    @tooManyRequests rate_limit zone=default_rl burst=100r/s;
+    respond @tooManyRequests 429
+}

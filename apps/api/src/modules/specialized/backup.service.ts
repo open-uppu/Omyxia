@@ -27,7 +27,7 @@ export class BackupService extends TenantScopedService {
       where: { id },
       data: {
         status: 'COMPLETED',
-        sizeBytes,
+        sizebytes: BigInt(sizeBytes),
         storageKey,
         completedAt: new Date(),
       },

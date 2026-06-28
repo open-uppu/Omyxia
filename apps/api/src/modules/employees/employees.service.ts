@@ -23,14 +23,12 @@ export class EmployeesService {
       },
       skip: params.skip ?? 0,
       take: params.take ?? 50,
-      include: { department: true, position: true, manager: true },
     });
   }
 
   async get(id: string) {
     return this.prisma.employee.findFirst({
       where: { id, tenantId: this.getTenantId() },
-      include: { department: true, position: true, manager: true },
     });
   }
 

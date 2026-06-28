@@ -24,7 +24,7 @@ describe('CrmService', () => {
 
     expect(prisma.crmLead.findMany).toHaveBeenCalledWith({
       where: { tenantId: 'tenant-1' },
-      include: { customer: true, owner: true },
+      include: { Customer: true, User: true },
     });
     expect(result).toEqual([{ id: 'lead-1', name: 'Acme' }]);
   });
@@ -34,7 +34,7 @@ describe('CrmService', () => {
 
     expect(prisma.crmLead.findMany).toHaveBeenCalledWith({
       where: { tenantId: 'tenant-1', stage: 'QUALIFIED', status: 'OPEN' },
-      include: { customer: true, owner: true },
+      include: { Customer: true, User: true },
     });
   });
 

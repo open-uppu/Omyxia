@@ -18,7 +18,7 @@ export class JournalService {
   async list() {
     return this.prisma.journalEntry.findMany({
       where: { tenantId: this.getTenantId() },
-      include: { lines: { include: { account: true } } },
+      include: { lines: { include: { ChartOfAccounts: true } } },
       orderBy: { date: 'desc' },
       take: 100,
     });
@@ -59,14 +59,14 @@ export class JournalService {
         tenantId: this.getTenantId(),
         entry: { date: { gte: periodStart, lte: periodEnd } },
       },
-      include: { account: true },
+      include: { ChartOfAccounts: true },
     });
     const balances = new Map<string, { code: string; name: string; debit: number; credit: number }>();
-    for (const line of lines) {
+    for (const line of lines as any[]) {
       const key = line.accountId;
       const existing = balances.get(key) || {
-        code: line.account.code,
-        name: line.account.name,
+        code: line.ChartOfAccounts?.code ?? '',
+        name: line.ChartOfAccounts?.name ?? '',
         debit: 0,
         credit: 0,
       };

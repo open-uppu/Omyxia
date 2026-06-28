@@ -44,7 +44,7 @@ export class ChatService {
       where: { tenantId: this.getTenantId(), channelId },
       orderBy: { createdAt: 'desc' },
       take: limit,
-      include: { sender: { select: { id: true, name: true, avatarUrl: true } } },
+      include: { User: { select: { id: true, name: true, avatarUrl: true } } },
     });
   }
 

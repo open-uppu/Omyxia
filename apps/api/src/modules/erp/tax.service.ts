@@ -23,7 +23,7 @@ export class TaxService {
 
   async createRate(data: any) {
     return this.prisma.taxRate.create({
-      data: { ...data, tenantId: this.getTenantId() },
+      data: { ...data, tenantId: this.getTenantId(), type: data.type as any },
     });
   }
 
@@ -37,7 +37,7 @@ export class TaxService {
     ];
     for (const rate of defaults) {
       await this.prisma.taxRate.create({
-        data: { ...rate, tenantId: this.getTenantId() },
+        data: { ...rate, tenantId: this.getTenantId(), type: rate.type as any },
       }).catch(() => null); // skip duplicates
     }
     return { count: defaults.length };
@@ -48,7 +48,6 @@ export class TaxService {
       where: {
         tenantId: this.getTenantId(),
         sourceType: 'INVOICE',
-        taxRate: { type: 'OUTPUT_VAT' },
         createdAt: { gte: periodStart, lte: periodEnd },
       },
     });
@@ -56,7 +55,6 @@ export class TaxService {
       where: {
         tenantId: this.getTenantId(),
         sourceType: 'BILL',
-        taxRate: { type: 'INPUT_VAT' },
         createdAt: { gte: periodStart, lte: periodEnd },
       },
     });

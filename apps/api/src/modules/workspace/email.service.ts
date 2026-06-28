@@ -16,12 +16,14 @@ export class EmailService {
   }
 
   async sendEmail(data: { to: string | string[]; subject: string; body?: string; bodyHtml?: string; bodyText?: string }) {
+    const toAddresses = Array.isArray(data.to) ? data.to : [data.to];
     return this.prisma.emailMessage.create({
       data: {
         tenantId: this.getTenantId(),
         folder: 'SENT',
         from: 'noreply@openuppu.local',
-        to: Array.isArray(data.to) ? data.to.join(',') : data.to,
+        fromAddress: 'noreply@openuppu.local',
+        toAddresses,
         subject: data.subject,
         body: data.body ?? data.bodyText ?? data.bodyHtml ?? '',
       },
@@ -65,7 +67,7 @@ export class EmailService {
         code: data.code ?? data.name.toLowerCase().replace(/\s+/g, '-'),
         name: data.name,
         subject: data.subject,
-        body: data.body ?? data.bodyHtml ?? '',
+        bodyHtml: data.bodyHtml ?? data.body ?? '',
       },
     });
   }

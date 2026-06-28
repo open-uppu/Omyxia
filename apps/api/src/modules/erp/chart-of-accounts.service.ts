@@ -30,7 +30,12 @@ export class ChartOfAccountsService {
 
   async create(data: any) {
     return this.prisma.chartOfAccounts.create({
-      data: { ...data, tenantId: this.getTenantId() },
+      data: {
+        ...data,
+        tenantId: this.getTenantId(),
+        type: data.type as any,
+        normalBalance: (data.normalBalance ?? 'DEBIT') as any,
+      },
     });
   }
 
@@ -53,7 +58,7 @@ export class ChartOfAccountsService {
     for (const acc of accounts) {
       await this.prisma.chartOfAccounts.upsert({
         where: { tenantId_code: { tenantId: this.getTenantId(), code: acc.code } },
-        create: { ...acc, tenantId: this.getTenantId() },
+        create: { ...acc, tenantId: this.getTenantId(), type: acc.type as any, normalBalance: acc.normalBalance as any },
         update: {},
       });
     }

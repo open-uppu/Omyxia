@@ -1,0 +1,27 @@
+{
+  "name": "@omyxia/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Omyxia Next.js 15 Frontend (scaffold)",
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --port 3000",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^15.0.0",
+    "typescript": "^5.4.5",
+    "vitest": "^2.1.9"
+  }
+}

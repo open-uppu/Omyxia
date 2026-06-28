@@ -18,7 +18,6 @@ export class FilesService {
   async listFolders(parentId?: string) {
     return this.prisma.fileFolder.findMany({
       where: { tenantId: this.getTenantId(), parentId: parentId || null },
-      include: { children: true },
     });
   }
 
@@ -38,7 +37,7 @@ export class FilesService {
         tenantId: this.getTenantId(),
         ...(folderId && { folderId }),
       },
-      include: { owner: { select: { id: true, name: true } } },
+      include: { User: { select: { id: true, name: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }

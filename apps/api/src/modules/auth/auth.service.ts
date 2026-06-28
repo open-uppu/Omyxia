@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../common/prisma/prisma.service';
+import { PrismaService } from '../../common/prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -12,17 +12,26 @@ export class AuthService {
 
   async signup(email: string, password: string, name: string, tenantName: string) {
     const passwordHash = await bcrypt.hash(password, 12);
-    const tenant = await this.prisma.tenant.create({
+    const user = await this.prisma.user.create({
       data: {
-        slug: email.split('@')[0] + '-' + Date.now(),
-        name: tenantName,
-        users: {
-          create: { email, passwordHash, name },
+        email,
+        passwordHash,
+        name,
+        tenants: {
+          create: {
+            tenant: {
+              create: {
+                slug: email.split('@')[0] + '-' + Date.now(),
+                name: tenantName,
+              },
+            },
+          },
         },
       },
-      include: { users: true },
+      include: { tenants: { include: { tenant: true } } },
     });
-    const user = tenant.users[0];
+    const membership = user.tenants[0];
+    const tenant = membership.tenant;
     const token = this.jwt.sign({ sub: user.id, activeTenantId: tenant.id, role: 'OWNER' });
     return { token, tenant, user };
   }
@@ -42,7 +51,7 @@ export class AuthService {
 
   async switchTenant(userId: string, tenantId: string) {
     const membership = await this.prisma.userTenant.findUnique({
-      where: { userId_tenantId: { userId, tenantId } },
+      where: { tenantId_userId: { tenantId, userId } },
     });
     if (!membership) throw new Error('Not a member of this tenant');
     const token = this.jwt.sign({ sub: userId, activeTenantId: tenantId, role: membership.role });

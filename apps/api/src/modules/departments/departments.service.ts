@@ -18,15 +18,14 @@ export class DepartmentsService {
   async list() {
     return this.prisma.department.findMany({
       where: { tenantId: this.getTenantId() },
-      include: { children: true, employees: true },
     });
   }
 
   async getTree() {
     const all = await this.list();
-    const map = new Map(all.map((d) => [d.id, { ...d, children: [] }]));
+    const map = new Map<string, any>(all.map((d: any) => [d.id, { ...d, children: [] as any[] }]));
     const roots: any[] = [];
-    for (const d of all) {
+    for (const d of all as any[]) {
       if (d.parentId && map.has(d.parentId)) {
         map.get(d.parentId)!.children.push(map.get(d.id));
       } else {

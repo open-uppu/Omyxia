@@ -32,7 +32,7 @@ export class CrmService {
         ...(stage && { stage }),
         ...(status && { status: status as any }),
       },
-      include: { customer: true, owner: true },
+      include: { Customer: true, User: true },
     });
   }
 

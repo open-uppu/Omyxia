@@ -33,7 +33,7 @@ async function main() {
 
   // Link user to tenant as OWNER
   await prisma.userTenant.upsert({
-    where: { userId_tenantId: { userId: user.id, tenantId: tenant.id } },
+    where: { tenantId_userId: { tenantId: tenant.id, userId: user.id } },
     create: { userId: user.id, tenantId: tenant.id, role: 'OWNER', active: true },
     update: {},
   });

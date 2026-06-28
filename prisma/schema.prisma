@@ -1,5 +1,3 @@
-// omyxia — Prisma schema (clean, validation-ready)
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -9,346 +7,421 @@ datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
   directUrl  = env("DIRECT_URL")
+  extensions = [citext(schema: "public")]
 }
 
 model Tenant {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  name        String
-  plan        String   @default("STARTER")
-  status      String   @default("ACTIVE")
-  settings    Json     @default("{}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String               @id @default(cuid())
+  slug               String               @unique
+  name               String
+  plan               TenantPlan           @default(STARTER)
+  status             TenantStatus         @default(ACTIVE)
+  settings           Json                 @default("{}")
+  createdAt          DateTime             @default(now()) @db.Timestamp(6)
+  updatedAt          DateTime             @default(now()) @updatedAt @db.Timestamp(6)
+  ApBill             ApBill[]
+  ArInvoice          ArInvoice[]
+  AttendanceRecord   AttendanceRecord[]
+  BackupRecord       BackupRecord[]
+  CashFlowForecast   CashFlowForecast[]
+  ChartOfAccounts    ChartOfAccounts[]
+  ChatChannel        ChatChannel[]
+  ChatChannelMember  ChatChannelMember[]
+  ChatMessage        ChatMessage[]
+  ConsentRecord      ConsentRecord[]
+  CookieConsent      CookieConsent[]
+  CreditAssessment   CreditAssessment[]
+  CrmActivity        CrmActivity[]
+  CrmLead            CrmLead[]
+  CrmPipeline        CrmPipeline[]
+  Customer           Customer[]
+  CustomerEvent      CustomerEvent[]
+  CustomerProfile    CustomerProfile[]
+  Dashboard          Dashboard[]
+  DataBreachIncident DataBreachIncident[]
+  DataSubjectRequest DataSubjectRequest[]
+  departments        Department[]
+  Device             Device[]
+  DocumentInstance   DocumentInstance[]
+  DocumentTemplate   DocumentTemplate[]
+  EmailMessage       EmailMessage[]
+  EmailTemplate      EmailTemplate[]
+  employees          Employee[]
+  FileFolder         FileFolder[]
+  FileItem           FileItem[]
+  FiscalPeriod       FiscalPeriod[]
+  FraudAlert         FraudAlert[]
+  InventoryItem      InventoryItem[]
+  Invoice            Invoice[]
+  JournalEntry       JournalEntry[]
+  JournalLine        JournalLine[]
+  KpiDefinition      KpiDefinition[]
+  KpiSnapshot        KpiSnapshot[]
+  LeaveQuota         LeaveQuota[]
+  LeaveRequest       LeaveRequest[]
+  MarketingCampaign  MarketingCampaign[]
+  PayrollLine        PayrollLine[]
+  PayrollPeriod      PayrollPeriod[]
+  positions          Position[]
+  PrivacyPolicy      PrivacyPolicy[]
+  Project            Project[]
+  ProjectTask        ProjectTask[]
+  ReportSnapshot     ReportSnapshot[]
+  StockMovement      StockMovement[]
+  SupplierScore      SupplierScore[]
+  TaxRate            TaxRate[]
+  TaxTransaction     TaxTransaction[]
+  ThreatEvent        ThreatEvent[]
+  Ticket             Ticket[]
+  users              UserTenant[]
+  Vehicle            Vehicle[]
+  VehicleTrip        VehicleTrip[]
+  Vendor             Vendor[]
+  Warehouse          Warehouse[]
 
-  users        UserTenant[]
-  employees    Employee[]
-  departments  Department[]
-  positions    Position[]
-
-  @@index([slug])
-  @@index([status])
+  @@index([status], map: "idx_tenant_status")
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  passwordHash  String
-  displayName   String
-  locale        String   @default("en")
-  status        String   @default("ACTIVE")
-  mfaEnabled    Boolean  @default(false)
-  mfaSecret     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String              @id @default(cuid())
+  email             String              @unique @db.Citext
+  emailVerified     DateTime?           @db.Timestamp(6)
+  passwordHash      String
+  name              String
+  locale            String              @default("th")
+  avatarUrl         String?
+  lastLoginAt       DateTime?           @db.Timestamp(6)
+  createdAt         DateTime            @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime            @default(now()) @updatedAt @db.Timestamp(6)
+  ChatChannelMember ChatChannelMember[]
+  ChatMessage       ChatMessage[]
+  CrmActivity       CrmActivity[]
+  CrmLead           CrmLead[]
+  EmailMessage      EmailMessage[]
+  Employee          Employee[]
+  FileFolder        FileFolder[]
+  FileItem          FileItem[]
+  mfaFactors        MfaFactor[]
+  sessions          UserSession[]
+  tenants           UserTenant[]
 
-  tenants       UserTenant[]
-  sessions      UserSession[]
-  mfaFactors    MfaFactor[]
-  auditLogs     AuditLog[]
-
-  @@index([email])
-  @@index([status])
+  @@index([email], map: "idx_user_email")
 }
 
 model UserTenant {
-  id        String   @id @default(cuid())
-  userId    String
-  tenantId  String
-  role      String   @default("MEMBER") // OWNER | ADMIN | MEMBER | VIEWER
-  status    String   @default("ACTIVE")
-  joinedAt  DateTime @default(now())
+  id       String     @id @default(cuid())
+  tenantId String
+  userId   String
+  role     TenantRole @default(MEMBER)
+  active   Boolean    @default(true)
+  joinedAt DateTime   @default(now()) @db.Timestamp(6)
+  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, tenantId])
-  @@index([tenantId])
-  @@index([role])
+  @@unique([tenantId, userId])
+  @@index([tenantId], map: "idx_user_tenant_tenant")
+  @@index([userId], map: "idx_user_tenant_user")
 }
 
 model UserSession {
-  id          String   @id @default(cuid())
-  userId      String
-  ip          String?
-  userAgent   String?
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-  revokedAt   DateTime?
+  id             String   @id @default(cuid())
+  userId         String
+  token          String   @unique
+  activeTenantId String?
+  userAgent      String?
+  ipAddress      String?
+  expiresAt      DateTime @db.Timestamp(6)
+  createdAt      DateTime @default(now()) @db.Timestamp(6)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([expiresAt])
+  @@index([expiresAt], map: "idx_user_session_expires")
+  @@index([token], map: "idx_user_session_token")
+  @@index([userId], map: "idx_user_session_user")
 }
 
 model Employee {
-  id            String   @id @default(cuid())
-  tenantId      String
-  employeeNo    String
-  firstName     String
-  lastName      String
-  email         String?
-  phone         String?
-  departmentId  String?
-  positionId    String?
-  managerId     String?
-  hireDate      DateTime
-  status        String   @default("ACTIVE")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  department    Department?  @relation(fields: [departmentId], references: [id])
-  position      Position?    @relation(fields: [positionId], references: [id])
-  manager       Employee?    @relation("ManagerSubordinates", fields: [managerId], references: [id])
-  subordinates  Employee[]   @relation("ManagerSubordinates")
-
-  attendance    AttendanceRecord[]
-  leaveRequests LeaveRequest[]
-  payrollLines  PayrollLine[]
+  id               String             @id @default(cuid())
+  tenantId         String
+  userId           String?
+  employeeNo       String
+  firstName        String
+  lastName         String
+  thFirstName      String?
+  thLastName       String?
+  email            String?
+  nationalId       String?
+  taxId            String?
+  socialSecurityNo String?
+  hireDate         DateTime           @db.Timestamp(6)
+  terminationDate  DateTime?          @db.Timestamp(6)
+  employmentType   EmploymentType     @default(FULL_TIME)
+  baseSalary       Decimal?           @default(0) @db.Decimal(15, 2)
+  departmentId     String?
+  positionId       String?
+  managerId        String?
+  status           EmployeeStatus     @default(ACTIVE)
+  createdAt        DateTime           @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime           @default(now()) @updatedAt @db.Timestamp(6)
+  attendance       AttendanceRecord[]
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  User             User?              @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  LeaveQuota       LeaveQuota[]
+  leaveRequests    LeaveRequest[]
+  payrollLines     PayrollLine[]
 
   @@unique([tenantId, employeeNo])
   @@unique([tenantId, email])
-  @@index([tenantId])
-  @@index([departmentId])
-  @@index([status])
+  @@unique([tenantId, nationalId])
+  @@index([tenantId], map: "idx_employee_tenant")
+  @@index([tenantId, departmentId], map: "idx_employee_tenant_dept")
+  @@index([tenantId, managerId], map: "idx_employee_tenant_mgr")
+  @@index([tenantId, status], map: "idx_employee_tenant_status")
 }
 
 model Department {
-  id          String   @id @default(cuid())
-  tenantId    String
-  code        String
-  name        String
-  parentId    String?
-  managerId   String?
-  costCenter  String?
-  status      String   @default("ACTIVE")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parent      Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
-  children    Department[] @relation("DepartmentHierarchy")
-  employees   Employee[]
+  id        String   @id @default(cuid())
+  tenantId  String
+  code      String
+  name      String
+  parentId  String?
+  managerId String?
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, code])
-  @@index([tenantId])
-  @@index([parentId])
+  @@index([tenantId], map: "idx_department_tenant")
+  @@index([tenantId, parentId], map: "idx_department_tenant_parent")
 }
 
 model Position {
-  id          String   @id @default(cuid())
-  tenantId    String
-  code        String
-  title       String
-  level       Int       @default(1)
-  status      String   @default("ACTIVE")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employees   Employee[]
+  id        String   @id @default(cuid())
+  tenantId  String
+  code      String
+  title     String
+  level     Int      @default(1)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, code])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_position_tenant")
 }
 
 model AttendanceRecord {
-  id            String   @id @default(cuid())
-  tenantId      String
-  employeeId    String
-  date          DateTime @db.Date
-  clockIn       DateTime?
-  clockOut      DateTime?
-  hoursWorked   Float?
-  status        String   @default("PRESENT")
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  id          String           @id @default(cuid())
+  tenantId    String
+  employeeId  String
+  date        DateTime         @db.Timestamp(6)
+  clockIn     DateTime?        @db.Timestamp(6)
+  clockOut    DateTime?        @db.Timestamp(6)
+  hoursWorked Decimal?         @db.Decimal(5, 2)
+  status      AttendanceStatus @default(PRESENT)
+  notes       String?
+  createdAt   DateTime         @default(now()) @db.Timestamp(6)
+  employee    Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, employeeId, date])
-  @@index([tenantId])
-  @@index([employeeId])
-  @@index([date])
+  @@index([tenantId], map: "idx_attendance_tenant")
+  @@index([tenantId, date], map: "idx_attendance_tenant_date")
 }
 
 model LeaveRequest {
-  id            String   @id @default(cuid())
-  tenantId      String
-  employeeId    String
-  leaveType     String
-  startDate     DateTime @db.Date
-  endDate       DateTime @db.Date
-  days          Int
-  reason        String?
-  status        String   @default("PENDING")
-  approverId    String?
-  approvedAt    DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String      @id @default(cuid())
+  tenantId   String
+  employeeId String
+  leaveType  LeaveType
+  startDate  DateTime    @db.Timestamp(6)
+  endDate    DateTime    @db.Timestamp(6)
+  days       Int
+  reason     String?
+  status     LeaveStatus @default(PENDING)
+  approverId String?
+  approvedAt DateTime?   @db.Timestamp(6)
+  createdAt  DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime    @default(now()) @updatedAt @db.Timestamp(6)
+  employee   Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([employeeId])
-  @@index([status])
+  @@index([tenantId], map: "idx_leave_tenant")
+  @@index([tenantId, employeeId], map: "idx_leave_tenant_employee")
+  @@index([tenantId, status], map: "idx_leave_tenant_status")
 }
 
 model LeaveQuota {
-  id            String   @id @default(cuid())
-  tenantId      String
-  employeeId    String
-  leaveType     String
-  year          Int
-  entitlement   Float
-  used          Float    @default(0)
-  remaining     Float
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String    @id @default(cuid())
+  tenantId   String
+  employeeId String
+  leaveType  LeaveType
+  year       Int
+  quotaDays  Int
+  usedDays   Int       @default(0)
+  createdAt  DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  Employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, employeeId, leaveType, year])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_leave_quota_tenant")
 }
 
 model PayrollPeriod {
-  id            String   @id @default(cuid())
-  tenantId      String
-  periodStart   DateTime @db.Date
-  periodEnd     DateTime @db.Date
-  status        String   @default("OPEN")
-  totalGross    Float    @default(0)
-  totalNet      Float    @default(0)
-  totalTax      Float    @default(0)
-  processedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  lines         PayrollLine[]
+  id          String        @id @default(cuid())
+  tenantId    String
+  periodStart DateTime      @db.Timestamp(6)
+  periodEnd   DateTime      @db.Timestamp(6)
+  status      PayrollStatus @default(DRAFT)
+  approvedBy  String?
+  approvedAt  DateTime?     @db.Timestamp(6)
+  paidAt      DateTime?     @db.Timestamp(6)
+  createdAt   DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @db.Timestamp(6)
+  lines       PayrollLine[]
+  Tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, periodStart])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_payroll_tenant")
 }
 
 model PayrollLine {
-  id            String   @id @default(cuid())
-  tenantId      String
-  periodId      String
-  employeeId    String
-  gross         Float
-  tax           Float
-  net           Float
-  breakdown     Json     @default("{}")
-  createdAt     DateTime @default(now())
+  id             String        @id @default(cuid())
+  tenantId       String
+  periodId       String
+  employeeId     String
+  baseSalary     Decimal       @db.Decimal(15, 2)
+  overtime       Decimal       @default(0) @db.Decimal(15, 2)
+  bonus          Decimal       @default(0) @db.Decimal(15, 2)
+  allowances     Decimal       @default(0) @db.Decimal(15, 2)
+  deductions     Decimal       @default(0) @db.Decimal(15, 2)
+  tax            Decimal       @default(0) @db.Decimal(15, 2)
+  socialSecurity Decimal       @default(0) @db.Decimal(15, 2)
+  netPay         Decimal       @db.Decimal(15, 2)
+  details        Json          @default("{}")
+  createdAt      DateTime      @default(now()) @db.Timestamp(6)
+  employee       Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  period         PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  period        PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
-  employee      Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([periodId])
-  @@index([employeeId])
+  @@unique([periodId, employeeId])
+  @@index([periodId], map: "idx_payroll_line_period")
+  @@index([tenantId], map: "idx_payroll_line_tenant")
 }
 
 model ChartOfAccounts {
-  id            String   @id @default(cuid())
+  id            String        @id @default(cuid())
   tenantId      String
   code          String
   name          String
-  type          String
+  type          AccountType
+  normalBalance NormalBalance @default(DEBIT)
   parentId      String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  parent        ChartOfAccounts?  @relation("COA_Hierarchy", fields: [parentId], references: [id])
-  children      ChartOfAccounts[] @relation("COA_Hierarchy")
+  currency      String        @default("THB")
+  isActive      Boolean       @default(true)
+  isPostable    Boolean       @default(true)
+  path          String        @default("/")
+  createdAt     DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime      @default(now()) @updatedAt @db.Timestamp(6)
+  Tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  JournalLine   JournalLine[]
 
   @@unique([tenantId, code])
-  @@index([tenantId])
-  @@index([type])
+  @@index([tenantId], map: "idx_account_tenant")
+  @@index([tenantId, parentId], map: "idx_account_tenant_parent")
+  @@index([tenantId, type], map: "idx_account_tenant_type")
 }
 
 model JournalEntry {
-  id            String   @id @default(cuid())
-  tenantId      String
-  entryNo       String
-  date          DateTime @db.Date
-  description   String
-  status        String   @default("POSTED")
-  createdBy     String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  lines         JournalLine[]
+  id          String        @id @default(cuid())
+  tenantId    String
+  entryNo     String
+  date        DateTime      @db.Timestamp(6)
+  description String
+  reference   String?
+  status      JournalStatus @default(DRAFT)
+  approvedBy  String?
+  approvedAt  DateTime?     @db.Timestamp(6)
+  createdAt   DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @db.Timestamp(6)
+  Tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lines       JournalLine[]
 
   @@unique([tenantId, entryNo])
-  @@index([tenantId])
-  @@index([date])
+  @@index([tenantId], map: "idx_journal_tenant")
+  @@index([tenantId, date], map: "idx_journal_tenant_date")
+  @@index([tenantId, status], map: "idx_journal_tenant_status")
 }
 
 model JournalLine {
-  id            String   @id @default(cuid())
-  tenantId      String
-  entryId       String
-  accountId     String
-  debit         Float    @default(0)
-  credit        Float    @default(0)
-  description   String?
+  id              String          @id @default(cuid())
+  tenantId        String
+  entryId         String
+  accountId       String
+  debit           Decimal         @default(0) @db.Decimal(15, 2)
+  credit          Decimal         @default(0) @db.Decimal(15, 2)
+  description     String?
+  costCenter      String?
+  project         String?
+  createdAt       DateTime        @default(now()) @db.Timestamp(6)
+  ChartOfAccounts ChartOfAccounts @relation(fields: [accountId], references: [id], onUpdate: NoAction)
+  entry           JournalEntry    @relation(fields: [entryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  entry         JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([entryId])
-  @@index([accountId])
+  @@index([entryId], map: "idx_journal_line_entry")
+  @@index([tenantId], map: "idx_journal_line_tenant")
 }
 
 model FiscalPeriod {
-  id            String   @id @default(cuid())
-  tenantId      String
-  startDate     DateTime @db.Date
-  endDate       DateTime @db.Date
-  isClosed      Boolean  @default(false)
-  closedAt      DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String             @id @default(cuid())
+  tenantId  String
+  startDate DateTime           @db.Timestamp(6)
+  endDate   DateTime           @db.Timestamp(6)
+  status    FiscalPeriodStatus @default(OPEN)
+  closedAt  DateTime?          @db.Timestamp(6)
+  closedBy  String?
+  createdAt DateTime           @default(now()) @db.Timestamp(6)
+  Tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, startDate])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_fiscal_tenant")
 }
 
 model TaxRate {
-  id            String   @id @default(cuid())
-  tenantId      String
-  code          String
-  name          String
-  rate          Float
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String           @id @default(cuid())
+  tenantId       String
+  type           TaxType
+  name           String
+  rate           Decimal          @db.Decimal(5, 2)
+  effectiveFrom  DateTime         @db.Timestamp(6)
+  effectiveTo    DateTime?        @db.Timestamp(6)
+  createdAt      DateTime         @default(now()) @db.Timestamp(6)
+  Tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  TaxTransaction TaxTransaction[]
 
-  @@unique([tenantId, code])
-  @@index([tenantId])
+  @@unique([tenantId, type, effectiveFrom])
+  @@index([tenantId], map: "idx_tax_rate_tenant")
 }
 
 model TaxTransaction {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   tenantId      String
-  date          DateTime @db.Date
-  taxCode       String
-  baseAmount    Float
-  taxAmount     Float
-  refType       String?
-  refId         String?
-  createdAt     DateTime @default(now())
+  taxRateId     String
+  sourceType    String
+  sourceId      String
+  baseAmount    Decimal   @db.Decimal(15, 2)
+  taxAmount     Decimal   @db.Decimal(15, 2)
+  certificateNo String?
+  filedAt       DateTime? @db.Timestamp(6)
+  createdAt     DateTime  @default(now()) @db.Timestamp(6)
+  TaxRate       TaxRate   @relation(fields: [taxRateId], references: [id], onUpdate: NoAction)
+  Tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([date])
+  @@index([tenantId, sourceType, sourceId], map: "idx_tax_tx_source")
+  @@index([tenantId], map: "idx_tax_tx_tenant")
 }
 
 model Vendor {
-  id            String   @id @default(cuid())
+  id            String          @id @default(cuid())
   tenantId      String
   code          String
   name          String
@@ -356,727 +429,1042 @@ model Vendor {
   email         String?
   phone         String?
   address       String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
+  paymentTerms  Int             @default(30)
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime        @default(now()) @updatedAt @db.Timestamp(6)
   bills         ApBill[]
+  Invoice       Invoice[]
+  SupplierScore SupplierScore[]
+  Tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, code])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_vendor_tenant")
 }
 
 model Customer {
-  id            String   @id @default(cuid())
-  tenantId      String
-  code          String
-  name          String
-  taxId         String?
-  email         String?
-  phone         String?
-  address       String?
-  creditLimit   Float    @default(0)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  invoices      ArInvoice[]
+  id           String      @id @default(cuid())
+  tenantId     String
+  code         String
+  name         String
+  taxId        String?
+  email        String?
+  phone        String?
+  address      String?
+  creditLimit  Decimal     @default(0) @db.Decimal(15, 2)
+  paymentTerms Int         @default(30)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime    @default(now()) @updatedAt @db.Timestamp(6)
+  invoices     ArInvoice[]
+  CrmLead      CrmLead[]
+  Tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, code])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_customer_tenant")
 }
 
 model ArInvoice {
-  id            String   @id @default(cuid())
-  tenantId      String
-  invoiceNo     String
-  customerId    String
-  invoiceDate   DateTime @db.Date
-  dueDate       DateTime @db.Date
-  subtotal      Float
-  taxAmount     Float
-  total         Float
-  paidAmount    Float    @default(0)
-  status        String   @default("OPEN")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  customer      Customer @relation(fields: [customerId], references: [id])
+  id          String          @id @default(cuid())
+  tenantId    String
+  customerId  String?
+  invoiceNo   String
+  invoiceDate DateTime        @db.Timestamp(6)
+  dueDate     DateTime        @db.Timestamp(6)
+  subtotal    Decimal         @db.Decimal(15, 2)
+  taxAmount   Decimal         @default(0) @db.Decimal(15, 2)
+  total       Decimal         @db.Decimal(15, 2)
+  paidAmount  Decimal         @default(0) @db.Decimal(15, 2)
+  status      ArInvoiceStatus @default(DRAFT)
+  notes       String?
+  createdAt   DateTime        @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime        @default(now()) @updatedAt @db.Timestamp(6)
+  customer    Customer?       @relation(fields: [customerId], references: [id], onUpdate: NoAction)
+  Tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, invoiceNo])
-  @@index([tenantId])
-  @@index([customerId])
-  @@index([status])
+  @@index([tenantId], map: "idx_ar_tenant")
+  @@index([tenantId, status], map: "idx_ar_tenant_status")
 }
 
 model ApBill {
-  id            String   @id @default(cuid())
-  tenantId      String
-  billNo        String
-  vendorId      String
-  billDate      DateTime @db.Date
-  dueDate       DateTime @db.Date
-  subtotal      Float
-  taxAmount     Float
-  total         Float
-  paidAmount    Float    @default(0)
-  status        String   @default("OPEN")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  vendor        Vendor @relation(fields: [vendorId], references: [id])
+  id         String       @id @default(cuid())
+  tenantId   String
+  vendorId   String
+  billNo     String
+  billDate   DateTime     @db.Timestamp(6)
+  dueDate    DateTime     @db.Timestamp(6)
+  subtotal   Decimal      @db.Decimal(15, 2)
+  taxAmount  Decimal      @default(0) @db.Decimal(15, 2)
+  whtAmount  Decimal      @default(0) @db.Decimal(15, 2)
+  total      Decimal      @db.Decimal(15, 2)
+  paidAmount Decimal      @default(0) @db.Decimal(15, 2)
+  status     ApBillStatus @default(DRAFT)
+  notes      String?
+  createdAt  DateTime     @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime     @default(now()) @updatedAt @db.Timestamp(6)
+  Tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vendor     Vendor       @relation(fields: [vendorId], references: [id], onUpdate: NoAction)
 
   @@unique([tenantId, billNo])
-  @@index([tenantId])
-  @@index([vendorId])
-  @@index([status])
+  @@index([tenantId], map: "idx_ap_tenant")
 }
 
 model CrmPipeline {
-  id            String   @id @default(cuid())
-  tenantId      String
-  name          String
-  description   String?
-  isDefault     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String    @id @default(cuid())
+  tenantId  String
+  name      String
+  stages    Json      @default("[]")
+  isDefault Boolean   @default(false)
+  createdAt DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  leads     CrmLead[]
+  Tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  leads         CrmLead[]
-
-  @@index([tenantId])
+  @@unique([tenantId, name])
+  @@index([tenantId], map: "idx_crm_pipeline_tenant")
 }
 
 model CrmLead {
-  id            String   @id @default(cuid())
-  tenantId      String
-  pipelineId    String
-  name          String
-  contactEmail  String?
-  contactPhone  String?
-  source        String?
-  stage         String   @default("NEW")
-  score         Int      @default(0)
-  estimatedValue Float   @default(0)
-  ownerId       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String        @id @default(cuid())
+  tenantId          String
+  customerId        String?
+  ownerId           String?
+  pipelineId        String?
+  stage             String?
+  source            String?
+  name              String
+  company           String?
+  email             String?
+  phone             String?
+  value             Decimal       @default(0) @db.Decimal(15, 2)
+  probability       Int           @default(0)
+  status            CrmLeadStatus @default(NEW)
+  expectedCloseDate DateTime?     @db.Timestamp(6)
+  notes             String?
+  createdAt         DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime      @default(now()) @updatedAt @db.Timestamp(6)
+  activities        CrmActivity[]
+  Customer          Customer?     @relation(fields: [customerId], references: [id], onUpdate: NoAction)
+  User              User?         @relation(fields: [ownerId], references: [id], onUpdate: NoAction)
+  pipeline          CrmPipeline?  @relation(fields: [pipelineId], references: [id], onUpdate: NoAction)
+  Tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  pipeline      CrmPipeline    @relation(fields: [pipelineId], references: [id])
-  activities    CrmActivity[]
-
-  @@index([tenantId])
-  @@index([pipelineId])
-  @@index([stage])
+  @@index([tenantId], map: "idx_crm_lead_tenant")
+  @@index([tenantId, ownerId], map: "idx_crm_lead_tenant_owner")
+  @@index([tenantId, stage], map: "idx_crm_lead_tenant_stage")
+  @@index([tenantId, status], map: "idx_crm_lead_tenant_status")
 }
 
 model CrmActivity {
-  id            String   @id @default(cuid())
-  tenantId      String
-  leadId        String
-  type          String
-  subject       String
-  body          String?
-  dueDate       DateTime?
-  completedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String          @id @default(cuid())
+  tenantId    String
+  leadId      String?
+  userId      String
+  type        CrmActivityType
+  subject     String
+  description String?
+  dueAt       DateTime?       @db.Timestamp(6)
+  completedAt DateTime?       @db.Timestamp(6)
+  createdAt   DateTime        @default(now()) @db.Timestamp(6)
+  lead        CrmLead?        @relation(fields: [leadId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  User        User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  lead          CrmLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([leadId])
+  @@index([leadId], map: "idx_crm_activity_lead")
+  @@index([tenantId], map: "idx_crm_activity_tenant")
 }
 
 model EmailMessage {
-  id            String   @id @default(cuid())
-  tenantId      String
-  folder        String   @default("INBOX")
-  from          String
-  to            String
-  subject       String
-  body          String
-  isRead        Boolean  @default(false)
-  receivedAt    DateTime @default(now())
-  createdAt     DateTime @default(now())
+  id           String      @id @default(cuid())
+  tenantId     String
+  folder       String      @default("INBOX")
+  from         String      @default("")
+  senderId     String?
+  fromAddress  String
+  toAddresses  String[]
+  ccAddresses  String[]    @default([])
+  bccAddresses String[]    @default([])
+  subject      String
+  body         String      @default("")
+  bodyHtml     String?
+  bodyText     String?
+  receivedAt   DateTime?   @db.Timestamp(6)
+  status       EmailStatus @default(DRAFT)
+  sentAt       DateTime?   @db.Timestamp(6)
+  isRead       Boolean     @default(false)
+  createdAt    DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime    @default(now()) @db.Timestamp(6)
+  User         User?       @relation(fields: [senderId], references: [id], onUpdate: NoAction)
+  Tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([folder])
+  @@index([tenantId], map: "idx_email_tenant")
+  @@index([tenantId, folder], map: "idx_email_tenant_folder")
+  @@index([tenantId, sentAt], map: "idx_email_tenant_sent")
+  @@index([tenantId, status], map: "idx_email_tenant_status")
+  @@index([tenantId, receivedAt], map: "idx_email_tenant_received")
 }
 
 model EmailTemplate {
-  id            String   @id @default(cuid())
-  tenantId      String
-  code          String
-  name          String
-  subject       String
-  body          String
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  code      String?
+  name      String
+  subject   String
+  body      String   @default("")
+  bodyHtml  String
+  variables String[] @default([])
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  Tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, code])
-  @@index([tenantId])
+  @@unique([tenantId, name])
+  @@index([tenantId], map: "idx_email_template_tenant")
 }
 
 model ChatChannel {
-  id            String   @id @default(cuid())
-  tenantId      String
-  name          String
-  isPrivate     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String              @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  type        ChatChannelType     @default(PUBLIC)
+  isArchived  Boolean             @default(false)
+  createdAt   DateTime            @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime            @default(now()) @updatedAt @db.Timestamp(6)
+  Tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  members     ChatChannelMember[]
+  messages    ChatMessage[]
 
-  members       ChatChannelMember[]
-  messages      ChatMessage[]
-
-  @@index([tenantId])
+  @@unique([tenantId, name])
+  @@index([tenantId], map: "idx_chat_channel_tenant")
 }
 
 model ChatChannelMember {
-  id            String   @id @default(cuid())
-  tenantId      String
-  channelId     String
-  userId        String
-  joinedAt      DateTime @default(now())
-
-  channel       ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  id         String         @id @default(cuid())
+  tenantId   String
+  channelId  String
+  userId     String
+  role       ChatMemberRole @default(MEMBER)
+  lastReadAt DateTime?      @db.Timestamp(6)
+  joinedAt   DateTime       @default(now()) @db.Timestamp(6)
+  channel    ChatChannel    @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  User       User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([channelId, userId])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_chat_member_tenant")
+  @@index([userId], map: "idx_chat_member_user")
 }
 
 model ChatMessage {
-  id            String   @id @default(cuid())
-  tenantId      String
-  channelId     String
-  userId        String
-  body          String
-  editedAt      DateTime?
-  createdAt     DateTime @default(now())
+  id        String      @id @default(cuid())
+  tenantId  String
+  channelId String
+  senderId  String
+  content   String
+  parentId  String?
+  editedAt  DateTime?   @db.Timestamp(6)
+  deletedAt DateTime?   @db.Timestamp(6)
+  createdAt DateTime    @default(now()) @db.Timestamp(6)
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  User      User        @relation(fields: [senderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  channel       ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([channelId])
+  @@index([channelId, createdAt], map: "idx_chat_msg_channel")
+  @@index([senderId], map: "idx_chat_msg_sender")
+  @@index([tenantId], map: "idx_chat_msg_tenant")
 }
 
 model FileFolder {
-  id            String   @id @default(cuid())
-  tenantId      String
-  parentId      String?
-  name          String
-  createdBy     String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String     @id @default(cuid())
+  tenantId  String
+  parentId  String?
+  ownerId   String?
+  name      String
+  path      String
+  createdAt DateTime   @default(now()) @db.Timestamp(6)
+  updatedAt DateTime   @default(now()) @updatedAt @db.Timestamp(6)
+  User      User?      @relation(fields: [ownerId], references: [id], onUpdate: NoAction)
+  Tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  files     FileItem[]
 
-  parent        FileFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
-  children      FileFolder[] @relation("FolderHierarchy")
-  files         FileItem[]
-
-  @@index([tenantId])
-  @@index([parentId])
+  @@unique([tenantId, parentId, name])
+  @@index([tenantId, parentId], map: "idx_file_folder_parent")
+  @@index([tenantId], map: "idx_file_folder_tenant")
 }
 
 model FileItem {
-  id            String   @id @default(cuid())
-  tenantId      String
-  folderId      String?
-  name          String
-  mimeType      String
-  size          Int
-  storageKey    String
-  checksum      String?
-  uploadedBy    String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String      @id @default(cuid())
+  tenantId   String
+  folderId   String?
+  ownerId    String?
+  name       String
+  mimeType   String
+  size       BigInt
+  storageKey String
+  version    Int         @default(1)
+  checksum   String?
+  createdAt  DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime    @default(now()) @updatedAt @db.Timestamp(6)
+  folder     FileFolder? @relation(fields: [folderId], references: [id], onUpdate: NoAction)
+  User       User?       @relation(fields: [ownerId], references: [id], onUpdate: NoAction)
+  Tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  folder        FileFolder? @relation(fields: [folderId], references: [id])
-
-  @@index([tenantId])
-  @@index([folderId])
+  @@index([tenantId, folderId], map: "idx_file_item_folder")
+  @@index([tenantId, ownerId], map: "idx_file_item_owner")
+  @@index([tenantId], map: "idx_file_item_tenant")
 }
 
 model MfaFactor {
-  id            String   @id @default(cuid())
-  userId        String
-  type          String
-  secret        String
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
+  id          String    @id @default(cuid())
+  userId      String
+  type        MfaType
+  secret      String?
+  backupCodes String[]  @default([])
+  isActive    Boolean   @default(true)
+  lastUsedAt  DateTime? @db.Timestamp(6)
+  createdAt   DateTime  @default(now()) @db.Timestamp(6)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
+  @@index([userId], map: "idx_mfa_user")
+  @@index([userId, type], map: "idx_mfa_user_type")
 }
 
 model AuditLog {
-  id            String   @id @default(cuid())
-  tenantId      String?
-  userId        String?
-  action        String
-  resourceType  String
-  resourceId    String?
-  ip            String?
-  userAgent     String?
-  metadata      Json     @default("{}")
-  createdAt     DateTime @default(now())
+  id        String      @id @default(cuid())
+  tenantId  String?
+  userId    String?
+  table     String
+  rowId     String?
+  action    AuditAction
+  before    Json?
+  after     Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime    @default(now()) @db.Timestamp(6)
 
-  user          User? @relation(fields: [userId], references: [id])
-
-  @@index([tenantId])
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
+  @@index([table, rowId], map: "idx_audit_table_row")
+  @@index([tenantId, createdAt], map: "idx_audit_tenant_created")
+  @@index([userId, createdAt], map: "idx_audit_user_created")
 }
 
 model CreditAssessment {
-  id            String   @id @default(cuid())
-  tenantId      String
-  customerId    String
-  score         Int
-  riskLevel     String
-  notes         String?
-  assessedAt    DateTime @default(now())
-  createdAt     DateTime @default(now())
+  id              String    @id @default(cuid())
+  tenantId        String
+  partyType       String
+  partyId         String
+  creditLimit     Decimal   @db.Decimal(15, 2)
+  currentExposure Decimal   @default(0) @db.Decimal(15, 2)
+  riskScore       Int       @default(0)
+  riskGrade       String?
+  assessedAt      DateTime  @default(now()) @db.Timestamp(6)
+  nextReviewAt    DateTime? @db.Timestamp(6)
+  notes           String?
+  createdAt       DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime  @default(now()) @db.Timestamp(6)
+  Tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([customerId])
+  @@index([tenantId, partyType, partyId], map: "idx_credit_party")
+  @@index([tenantId], map: "idx_credit_tenant")
 }
 
 model CashFlowForecast {
-  id            String   @id @default(cuid())
-  tenantId      String
-  periodStart   DateTime @db.Date
-  periodEnd     DateTime @db.Date
-  openingBalance Float
-  inflow        Float    @default(0)
-  outflow       Float    @default(0)
-  closingBalance Float
-  createdAt     DateTime @default(now())
+  id              String   @id @default(cuid())
+  tenantId        String
+  periodStart     DateTime @db.Timestamp(6)
+  periodEnd       DateTime @db.Timestamp(6)
+  openingBalance  Decimal  @db.Decimal(15, 2)
+  expectedInflow  Decimal  @db.Decimal(15, 2)
+  expectedOutflow Decimal  @db.Decimal(15, 2)
+  closingBalance  Decimal  @db.Decimal(15, 2)
+  notes           String?
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+  Tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([periodStart])
+  @@index([tenantId], map: "idx_cashflow_tenant")
 }
 
 model FraudAlert {
-  id            String   @id @default(cuid())
-  tenantId      String
-  source        String
-  severity      String
-  status        String   @default("OPEN")
-  description   String
-  metadata      Json     @default("{}")
-  detectedAt    DateTime @default(now())
-  createdAt     DateTime @default(now())
+  id          String    @id @default(cuid())
+  tenantId    String
+  sourceType  String
+  sourceId    String?
+  alertType   String
+  severity    String
+  description String
+  status      String    @default("OPEN")
+  reviewedBy  String?
+  reviewedAt  DateTime? @db.Timestamp(6)
+  createdAt   DateTime  @default(now()) @db.Timestamp(6)
+  Tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([severity])
-  @@index([status])
+  @@index([tenantId], map: "idx_fraud_tenant")
 }
 
 model MarketingCampaign {
-  id            String   @id @default(cuid())
-  tenantId      String
-  name          String
-  channel       String
-  status        String   @default("DRAFT")
-  startDate     DateTime?
-  endDate       DateTime?
-  budget        Float    @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String    @id @default(cuid())
+  tenantId        String
+  name            String
+  type            String
+  status          String    @default("DRAFT")
+  audienceFilter  Json      @default("{}")
+  emailTemplateId String?
+  scheduledAt     DateTime? @db.Timestamp(6)
+  sentAt          DateTime? @db.Timestamp(6)
+  recipientsCount Int       @default(0)
+  createdAt       DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  Tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([status])
+  @@index([tenantId], map: "idx_campaign_tenant")
 }
 
 model CustomerProfile {
-  id            String   @id @default(cuid())
+  id            String          @id @default(cuid())
   tenantId      String
-  customerId    String
-  traits        Json     @default("{}")
-  preferences   Json     @default("{}")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  customerId    String?
+  email         String?
+  phone         String?
+  attributes    Json            @default("{}")
+  lastEventAt   DateTime?       @db.Timestamp(6)
+  totalEvents   Int             @default(0)
+  lifetimeValue Decimal         @default(0) @db.Decimal(15, 2)
+  createdAt     DateTime        @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime        @default(now()) @updatedAt @db.Timestamp(6)
+  CustomerEvent CustomerEvent[]
+  Tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([tenantId, customerId])
-  @@index([tenantId])
+  @@index([tenantId, email], map: "idx_profile_email")
+  @@index([tenantId], map: "idx_profile_tenant")
 }
 
 model CustomerEvent {
-  id            String   @id @default(cuid())
-  tenantId      String
-  customerId    String
-  eventType     String
-  payload       Json     @default("{}")
-  occurredAt    DateTime @default(now())
+  id              String          @id @default(cuid())
+  tenantId        String
+  profileId       String
+  type            String
+  source          String?
+  properties      Json            @default("{}")
+  occurredAt      DateTime        @default(now()) @db.Timestamp(6)
+  CustomerProfile CustomerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([customerId])
-  @@index([occurredAt])
+  @@index([profileId, occurredAt], map: "idx_event_profile")
+  @@index([tenantId], map: "idx_event_tenant")
 }
 
 model Project {
-  id            String   @id @default(cuid())
-  tenantId      String
-  code          String
-  name          String
-  description   String?
-  startDate     DateTime?
-  endDate       DateTime?
-  status        String   @default("ACTIVE")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String        @id @default(cuid())
+  tenantId    String
+  name        String
+  code        String?
+  description String?
+  status      String        @default("PLANNING")
+  startDate   DateTime?     @db.Timestamp(6)
+  endDate     DateTime?     @db.Timestamp(6)
+  ownerId     String?
+  budget      Decimal?      @db.Decimal(15, 2)
+  createdAt   DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @db.Timestamp(6)
+  Tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks       ProjectTask[]
 
-  tasks         ProjectTask[]
-
-  @@unique([tenantId, code])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_project_tenant")
 }
 
 model ProjectTask {
-  id            String   @id @default(cuid())
-  tenantId      String
-  projectId     String
-  parentId      String?
-  title         String
-  description   String?
-  assigneeId    String?
-  status        String   @default("TODO")
-  priority      String   @default("NORMAL")
-  startDate     DateTime?
-  dueDate       DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String    @id @default(cuid())
+  tenantId       String
+  projectId      String
+  parentId       String?
+  assigneeId     String?
+  title          String
+  description    String?
+  status         String    @default("TODO")
+  priority       String    @default("MEDIUM")
+  dueDate        DateTime? @db.Timestamp(6)
+  estimatedHours Decimal?  @db.Decimal(5, 2)
+  actualHours    Decimal?  @db.Decimal(5, 2)
+  createdAt      DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  project       Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([projectId])
-  @@index([status])
+  @@index([projectId], map: "idx_task_project")
+  @@index([tenantId], map: "idx_task_tenant")
 }
 
 model DocumentTemplate {
-  id            String   @id @default(cuid())
-  tenantId      String
-  code          String
-  name          String
-  content       String
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String             @id @default(cuid())
+  tenantId  String
+  name      String
+  category  String?
+  bodyHtml  String
+  variables String[]           @default([])
+  isActive  Boolean            @default(true)
+  createdAt DateTime           @default(now()) @db.Timestamp(6)
+  updatedAt DateTime           @default(now()) @updatedAt @db.Timestamp(6)
+  instances DocumentInstance[]
+  Tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  instances     DocumentInstance[]
-
-  @@unique([tenantId, code])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_doc_template_tenant")
 }
 
 model DocumentInstance {
-  id            String   @id @default(cuid())
-  tenantId      String
-  templateId    String
-  title         String
-  payload       Json     @default("{}")
-  createdBy     String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String            @id @default(cuid())
+  tenantId   String
+  templateId String?
+  title      String
+  bodyHtml   String?
+  status     String            @default("DRAFT")
+  signedBy   String?
+  signedAt   DateTime?         @db.Timestamp(6)
+  expiresAt  DateTime?         @db.Timestamp(6)
+  createdAt  DateTime          @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime          @default(now()) @updatedAt @db.Timestamp(6)
+  template   DocumentTemplate? @relation(fields: [templateId], references: [id], onUpdate: NoAction)
+  Tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  template      DocumentTemplate @relation(fields: [templateId], references: [id])
-
-  @@index([tenantId])
-  @@index([templateId])
+  @@index([tenantId], map: "idx_doc_instance_tenant")
 }
 
 model Warehouse {
-  id            String   @id @default(cuid())
-  tenantId      String
-  code          String
-  name          String
-  location      String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String          @id @default(cuid())
+  tenantId  String
+  code      String
+  name      String
+  address   String?
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now()) @db.Timestamp(6)
+  inventory InventoryItem[]
+  Tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  inventory     InventoryItem[]
-  movements     StockMovement[]
-
-  @@unique([tenantId, code])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_warehouse_tenant")
 }
 
 model InventoryItem {
-  id            String   @id @default(cuid())
+  id            String          @id @default(cuid())
   tenantId      String
   warehouseId   String
   sku           String
   name          String
-  uom           String   @default("EA")
-  quantity      Float    @default(0)
-  reorderPoint  Float    @default(0)
-  unitCost      Float    @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  description   String?
+  uom           String          @default("EA")
+  quantity      Decimal         @default(0) @db.Decimal(15, 3)
+  reorderPoint  Decimal?        @db.Decimal(15, 3)
+  unitCost      Decimal?        @db.Decimal(15, 2)
+  createdAt     DateTime        @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime        @default(now()) @updatedAt @db.Timestamp(6)
+  Tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  warehouse     Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  StockMovement StockMovement[]
 
-  warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
-
-  @@unique([tenantId, sku])
-  @@index([tenantId])
-  @@index([warehouseId])
+  @@unique([tenantId, warehouseId, sku])
+  @@index([tenantId], map: "idx_inventory_tenant")
+  @@index([warehouseId], map: "idx_inventory_warehouse")
 }
 
 model StockMovement {
-  id            String   @id @default(cuid())
+  id            String        @id @default(cuid())
   tenantId      String
-  warehouseId   String
   itemId        String
   type          String
-  quantity      Float
+  quantity      Decimal       @db.Decimal(15, 3)
+  unitCost      Decimal?      @db.Decimal(15, 2)
   reference     String?
-  occurredAt    DateTime @default(now())
-  createdAt     DateTime @default(now())
+  occurredAt    DateTime      @default(now()) @db.Timestamp(6)
+  InventoryItem InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
-
-  @@index([tenantId])
-  @@index([warehouseId])
-  @@index([itemId])
+  @@index([itemId], map: "idx_stock_mvmt_item")
+  @@index([tenantId], map: "idx_stock_mvmt_tenant")
 }
 
 model SupplierScore {
-  id            String   @id @default(cuid())
-  tenantId      String
-  supplierId    String
-  score         Int
-  criteria      Json     @default("{}")
-  evaluatedAt   DateTime @default(now())
+  id                   String   @id @default(cuid())
+  tenantId             String
+  vendorId             String
+  onTimeDeliveryRate   Decimal? @db.Decimal(5, 2)
+  qualityScore         Decimal? @db.Decimal(5, 2)
+  priceCompetitiveness Decimal? @db.Decimal(5, 2)
+  totalScore           Decimal? @db.Decimal(5, 2)
+  periodStart          DateTime @db.Timestamp(6)
+  periodEnd            DateTime @db.Timestamp(6)
+  createdAt            DateTime @default(now()) @db.Timestamp(6)
+  Tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Vendor               Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([supplierId])
+  @@index([tenantId], map: "idx_supplier_score_tenant")
 }
 
 model Ticket {
-  id            String   @id @default(cuid())
-  tenantId      String
-  code          String
-  subject       String
-  description   String?
-  status        String   @default("OPEN")
-  priority      String   @default("NORMAL")
-  assigneeId    String?
-  reporterId    String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String    @id @default(cuid())
+  tenantId    String
+  ticketNo    String
+  subject     String
+  description String?
+  status      String    @default("OPEN")
+  priority    String    @default("MEDIUM")
+  category    String?
+  reporterId  String?
+  assigneeId  String?
+  slaDueAt    DateTime? @db.Timestamp(6)
+  resolvedAt  DateTime? @db.Timestamp(6)
+  createdAt   DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  Tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([tenantId, code])
-  @@index([tenantId])
-  @@index([status])
+  @@unique([tenantId, ticketNo])
+  @@index([tenantId, status], map: "idx_ticket_status")
+  @@index([tenantId], map: "idx_ticket_tenant")
 }
 
 model Vehicle {
-  id            String   @id @default(cuid())
-  tenantId      String
-  plateNo       String
-  model         String
-  type          String?
-  status        String   @default("ACTIVE")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  trips         VehicleTrip[]
+  id                String        @id @default(cuid())
+  tenantId          String
+  plateNo           String
+  model             String?
+  yearMade          Int?
+  fuelType          String?
+  assignedDriverId  String?
+  status            String        @default("ACTIVE")
+  lastMaintenanceAt DateTime?     @db.Timestamp(6)
+  createdAt         DateTime      @default(now()) @db.Timestamp(6)
+  Tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  trips             VehicleTrip[]
 
   @@unique([tenantId, plateNo])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_vehicle_tenant")
 }
 
 model VehicleTrip {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   tenantId      String
   vehicleId     String
-  driverId      String
-  startAt       DateTime
-  endAt         DateTime?
-  startKm       Int
-  endKm         Int?
-  purpose       String?
-  createdAt     DateTime @default(now())
+  driverId      String?
+  startLocation String?
+  endLocation   String?
+  startAt       DateTime  @db.Timestamp(6)
+  endAt         DateTime? @db.Timestamp(6)
+  distance      Decimal?  @db.Decimal(10, 2)
+  fuelUsed      Decimal?  @db.Decimal(10, 2)
+  notes         String?
+  Tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vehicle       Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  vehicle       Vehicle @relation(fields: [vehicleId], references: [id])
-
-  @@index([tenantId])
-  @@index([vehicleId])
+  @@index([tenantId], map: "idx_trip_tenant")
 }
 
 model Device {
-  id            String   @id @default(cuid())
-  tenantId      String
-  name          String
-  type          String
-  status        String   @default("ONLINE")
-  lastSeen      DateTime?
-  metadata      Json     @default("{}")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String        @id @default(cuid())
+  tenantId   String
+  userId     String?
+  type       String
+  os         String?
+  hostname   String?
+  macAddress String?
+  ipAddress  String?
+  status     String        @default("ACTIVE")
+  lastSeenAt DateTime?     @db.Timestamp(6)
+  enrolledAt DateTime      @default(now()) @db.Timestamp(6)
+  Tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  threats    ThreatEvent[]
 
-  threats       ThreatEvent[]
-
-  @@index([tenantId])
-  @@index([status])
+  @@index([tenantId], map: "idx_device_tenant")
 }
 
 model ThreatEvent {
-  id            String   @id @default(cuid())
-  tenantId      String
-  deviceId      String
-  severity      String
-  type          String
-  description   String
-  detectedAt    DateTime @default(now())
-  resolvedAt    DateTime?
+  id          String    @id @default(cuid())
+  tenantId    String
+  deviceId    String?
+  type        String
+  severity    String
+  description String
+  status      String    @default("OPEN")
+  detectedAt  DateTime  @default(now()) @db.Timestamp(6)
+  resolvedAt  DateTime? @db.Timestamp(6)
+  device      Device?   @relation(fields: [deviceId], references: [id], onUpdate: NoAction)
+  Tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  device        Device @relation(fields: [deviceId], references: [id])
-
-  @@index([tenantId])
-  @@index([deviceId])
-  @@index([severity])
+  @@index([tenantId], map: "idx_threat_tenant")
 }
 
 model BackupRecord {
-  id            String   @id @default(cuid())
-  tenantId      String
-  resource      String
-  status        String
-  size          Int      @default(0)
-  startedAt     DateTime @default(now())
-  completedAt   DateTime?
-  storageKey    String?
-  createdAt     DateTime @default(now())
+  id          String    @id @default(cuid())
+  tenantId    String
+  type        String
+  status      String    @default("PENDING")
+  sizebytes   BigInt?
+  storageKey  String?
+  startedAt   DateTime  @default(now()) @db.Timestamp(6)
+  completedAt DateTime? @db.Timestamp(6)
+  expiresAt   DateTime? @db.Timestamp(6)
+  Tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([status])
+  @@index([tenantId], map: "idx_backup_tenant")
 }
 
 model ConsentRecord {
-  id            String   @id @default(cuid())
-  tenantId      String
-  subjectId     String
-  purpose       String
-  granted       Boolean
-  source        String?
-  capturedAt    DateTime @default(now())
+  id           String    @id @default(cuid())
+  tenantId     String
+  subjectType  String
+  subjectId    String
+  subjectEmail String?
+  type         String
+  grantedAt    DateTime  @default(now()) @db.Timestamp(6)
+  expiresAt    DateTime? @db.Timestamp(6)
+  ipAddress    String?
+  userAgent    String?
+  version      Int       @default(1)
+  withdrawnAt  DateTime? @db.Timestamp(6)
+  Tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([subjectId])
+  @@index([tenantId, subjectType, subjectId], map: "idx_consent_subject")
+  @@index([tenantId], map: "idx_consent_tenant")
+  @@index([tenantId, type], map: "idx_consent_type")
 }
 
 model DataSubjectRequest {
-  id            String   @id @default(cuid())
-  tenantId      String
-  subjectId     String
-  type          String
-  status        String   @default("RECEIVED")
-  dueDate       DateTime?
-  completedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(cuid())
+  tenantId     String
+  requestType  String
+  subjectEmail String
+  subjectName  String?
+  status       String    @default("PENDING")
+  receivedAt   DateTime  @default(now()) @db.Timestamp(6)
+  dueAt        DateTime  @db.Timestamp(6)
+  completedAt  DateTime? @db.Timestamp(6)
+  notes        String?
+  Tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([status])
+  @@index([tenantId, status], map: "idx_dsr_status")
+  @@index([tenantId], map: "idx_dsr_tenant")
 }
 
 model CookieConsent {
-  id            String   @id @default(cuid())
-  tenantId      String
-  visitorId     String
-  categories    Json     @default("{}")
-  capturedAt    DateTime @default(now())
+  id         String   @id @default(cuid())
+  tenantId   String
+  visitorId  String
+  categories String[] @default([])
+  grantedAt  DateTime @default(now()) @db.Timestamp(6)
+  expiresAt  DateTime @db.Timestamp(6)
+  version    Int      @default(1)
+  Tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([visitorId])
+  @@index([tenantId], map: "idx_cookie_tenant")
+  @@index([visitorId], map: "idx_cookie_visitor")
 }
 
 model PrivacyPolicy {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   tenantId      String
-  version       String
-  content       String
-  effectiveAt   DateTime
-  createdAt     DateTime @default(now())
+  version       Int
+  effectiveFrom DateTime  @db.Timestamp(6)
+  effectiveTo   DateTime? @db.Timestamp(6)
+  bodyHtml      String
+  createdAt     DateTime  @default(now()) @db.Timestamp(6)
+  Tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, version])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_policy_tenant")
 }
 
 model DataBreachIncident {
-  id            String   @id @default(cuid())
-  tenantId      String
-  severity      String
-  description   String
-  affectedCount Int      @default(0)
-  detectedAt    DateTime @default(now())
-  reportedAt    DateTime?
-  resolvedAt    DateTime?
+  id               String    @id @default(cuid())
+  tenantId         String
+  discoveredAt     DateTime  @default(now()) @db.Timestamp(6)
+  reportedAt       DateTime? @db.Timestamp(6)
+  severity         String
+  description      String
+  affectedRecords  Int?
+  status           String    @default("INVESTIGATING")
+  remediationNotes String?
+  Tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([tenantId])
-  @@index([severity])
+  @@index([tenantId], map: "idx_breach_tenant")
 }
 
 model Dashboard {
-  id            String   @id @default(cuid())
-  tenantId      String
-  name          String
-  layout        Json     @default("{}")
-  createdBy     String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String           @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  layout      Json             @default("[]")
+  isPublic    Boolean          @default(false)
+  ownerId     String?
+  createdAt   DateTime         @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime         @default(now()) @updatedAt @db.Timestamp(6)
+  Tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  snapshots   ReportSnapshot[]
 
-  snapshots     ReportSnapshot[]
-
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_dashboard_tenant")
 }
 
 model ReportSnapshot {
-  id            String   @id @default(cuid())
-  tenantId      String
-  dashboardId   String
-  data          Json
-  generatedAt   DateTime @default(now())
+  id          String     @id @default(cuid())
+  tenantId    String
+  dashboardId String?
+  name        String
+  parameters  Json       @default("{}")
+  data        Json       @default("{}")
+  generatedAt DateTime   @default(now()) @db.Timestamp(6)
+  expiresAt   DateTime?  @db.Timestamp(6)
+  dashboard   Dashboard? @relation(fields: [dashboardId], references: [id], onUpdate: NoAction)
+  Tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  dashboard     Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([dashboardId])
+  @@index([dashboardId], map: "idx_snapshot_dashboard")
+  @@index([tenantId], map: "idx_snapshot_tenant")
 }
 
 model KpiDefinition {
-  id            String   @id @default(cuid())
-  tenantId      String
-  code          String
-  name          String
-  unit          String?
-  query         String
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  snapshots     KpiSnapshot[]
+  id          String        @id @default(cuid())
+  tenantId    String
+  name        String
+  code        String
+  sqlQuery    String?
+  unit        String?
+  targetValue Decimal?      @db.Decimal(20, 4)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now()) @db.Timestamp(6)
+  Tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  snapshots   KpiSnapshot[]
 
   @@unique([tenantId, code])
-  @@index([tenantId])
+  @@index([tenantId], map: "idx_kpi_tenant")
 }
 
 model KpiSnapshot {
-  id            String   @id @default(cuid())
-  tenantId      String
-  kpiId         String
-  period        DateTime @db.Date
-  value         Float
-  metadata      Json     @default("{}")
-  capturedAt    DateTime @default(now())
+  id         String        @id @default(cuid())
+  tenantId   String
+  kpiId      String
+  value      Decimal       @db.Decimal(20, 4)
+  snapshotAt DateTime      @default(now()) @db.Timestamp(6)
+  period     String?
+  kpi        KpiDefinition @relation(fields: [kpiId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  kpi           KpiDefinition @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  @@index([kpiId, snapshotAt], map: "idx_kpi_snap_kpi")
+  @@index([tenantId], map: "idx_kpi_snap_tenant")
+}
 
-  @@index([tenantId])
-  @@index([kpiId])
-  @@index([period])
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Invoice {
+  id           String        @id
+  tenantId     String
+  vendorId     String?
+  customerName String
+  invoiceNo    String
+  type         InvoiceType   @default(AP)
+  status       InvoiceStatus @default(DRAFT)
+  invoiceDate  DateTime      @db.Timestamp(6)
+  dueDate      DateTime      @db.Timestamp(6)
+  total        Decimal       @db.Decimal(15, 2)
+  taxAmount    Decimal       @default(0) @db.Decimal(15, 2)
+  notes        String?
+  createdAt    DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime      @default(now()) @db.Timestamp(6)
+  Tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Vendor       Vendor?       @relation(fields: [vendorId], references: [id], onUpdate: NoAction)
+
+  @@unique([tenantId, invoiceNo])
+  @@index([tenantId], map: "idx_invoice_tenant")
+  @@index([tenantId, dueDate], map: "idx_invoice_tenant_due")
+  @@index([tenantId, status], map: "idx_invoice_tenant_status")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum ApBillStatus {
+  DRAFT
+  APPROVED
+  PARTIAL
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum ArInvoiceStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  LEAVE
+  HOLIDAY
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  PERMISSION_CHANGE
+  ROLE_ASSIGN
+  MFA_CHALLENGE
+  PASSWORD_RESET
+  SUSPICIOUS_ACTIVITY
+}
+
+enum ChatChannelType {
+  PUBLIC
+  PRIVATE
+  DIRECT
+}
+
+enum ChatMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+enum CrmActivityType {
+  CALL
+  EMAIL
+  MEETING
+  TASK
+  NOTE
+}
+
+enum CrmLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum EmailStatus {
+  DRAFT
+  QUEUED
+  SENT
+  DELIVERED
+  BOUNCED
+  FAILED
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+}
+
+enum FiscalPeriodStatus {
+  OPEN
+  CLOSED
+  LOCKED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum InvoiceType {
+  AP
+  AR
+}
+
+enum JournalStatus {
+  DRAFT
+  REVIEW
+  POSTED
+  REVERSED
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveType {
+  VACATION
+  SICK
+  PERSONAL
+  MATERNITY
+  PATERNITY
+  UNPAID
+  OTHER
+}
+
+enum MfaType {
+  TOTP
+  SMS
+  EMAIL
+}
+
+enum NormalBalance {
+  DEBIT
+  CREDIT
+}
+
+enum PayrollStatus {
+  DRAFT
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+enum TaxType {
+  VAT
+  OUTPUT_VAT
+  INPUT_VAT
+  WHT_1
+  WHT_2
+  WHT_3
+  WHT_5
+  STAMP_DUTY
+}
+
+enum TenantPlan {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+enum TenantRole {
+  OWNER
+  ADMIN
+  HR_MANAGER
+  ACCOUNTANT
+  MANAGER
+  MEMBER
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
 }

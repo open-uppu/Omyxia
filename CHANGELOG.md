@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **File upload + MinIO (Phase D)** — S3-compatible object storage wired into the Workspace `files` surface via presigned URLs
+  - `StorageModule` (global) wraps the existing `StorageService` (uses
+    `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`; same code path
+    works against MinIO and AWS S3 — `forcePathStyle: true`, region
+    `us-east-1`, env-driven endpoint + credentials)
+  - `FilesService` now issues presigned PUT URLs (`POST /files/presign`),
+    accepts a finalize call (`POST /files/:id/finalize` that pulls the
+    server-side size via `HeadObject`), and returns presigned GET URLs
+    (`GET /files/:id`). Delete (`DELETE /files/:id`) removes both the
+    row and the S3 object.
+  - Tenant-scoped storage keys: `<tenantId>/<folderId|root>/<yyyy>/<mm>/<rand>-<safeName>`,
+    with a `..`/slash collapse guard that keeps the leaf inside the tenant prefix.
+  - All endpoints require auth + tenant scope (enforced by the existing
+    `TenantContextMiddleware` + `RolesGuard`). Role gates: presign/finalize/download
+    = `OWNER`/`ADMIN`/`MANAGER`/`MEMBER`; delete = `OWNER`/`ADMIN`.
+  - 22 unit tests in `files.service.spec.ts` (context guard, key
+    generation, sanitisation, finalize size reconciliation, tenant-scoped
+    404s, TTL cap, delete cleanup)
+  - 15 unit tests in `storage.service.spec.ts` (bucket probe, presign,
+    head/metadata, getMetadata NotFound, getClient/getBucketName accessors)
+  - 5 e2e tests in `test/e2e/files.e2e-spec.ts` (boots, full happy path,
+    cross-tenant 404, delete cleanup, TTL cap)
 - Real-DB integration guard (`test/integration/schema-drift.integration-spec.ts`) — 5 tests
 - E2E smoke test for Health module (`test/e2e/health.e2e-spec.ts`)
 - Vitest configs for unit + e2e + integration tiers

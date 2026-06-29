@@ -18,7 +18,7 @@
 [![Postgres](https://img.shields.io/badge/PostgreSQL-16-336791)](https://postgresql.org)
 [![NestJS](https://img.shields.io/badge/NestJS-10-E0234E)](https://nestjs.com)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000)](https://nextjs.org)
-[![Tests](https://img.shields.io/badge/tests-47%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-192%20passing-brightgreen)]()
 [![Build](https://img.shields.io/badge/build-3%2F3-success)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://typescriptlang.org)
 
@@ -264,7 +264,7 @@ Omyxia uses a **3-tier testing pyramid**:
 
 | Command | What it does |
 |---|---|
-| `pnpm test` | Unit tests (47 tests across api + shared-types + web) |
+| `pnpm test` | Backend tests (192 tests passing) |
 | `pnpm test:e2e` | E2E smoke tests (boots NestJS) |
 | `pnpm --filter @omyxia/api test:integration` | DB integration guard (requires Postgres) |
 | `pnpm type-check` | TypeScript strict mode check |
@@ -274,7 +274,7 @@ Omyxia uses a **3-tier testing pyramid**:
 ### Test Stats (current)
 
 ```
-✅ Unit tests:        47 / 47 passing
+✅ Backend tests:    192 / 192 passing
 ✅ E2E tests:          1 / 1 passing (health smoke)
 ✅ Integration:        5 / 5 passing (DB ↔ schema sync)
 ✅ Type-check:         0 errors
@@ -297,22 +297,24 @@ Omyxia uses a **3-tier testing pyramid**:
 - [x] Demo tenant seed
 - [x] Unit + E2E + Integration test coverage
 
-### 🟡 v0.2.0 — Auth & Tenant Lifecycle
+### ✅ v0.2.0 — Auth & Tenant Lifecycle
 
-- [ ] JWT issuance + refresh tokens
-- [ ] Multi-tenant signup flow with onboarding
-- [ ] Tenant switcher UI
-- [ ] RBAC permissions matrix (Owner / Admin / Member / Viewer)
-- [ ] MFA enrollment + recovery codes
-- [ ] Audit log API + UI
+  - [x] JWT issuance + refresh tokens (auth.controller.ts)
+  - [x] Multi-tenant signup flow with onboarding (signup + onboarding/complete endpoints)
+  - [x] Tenant switcher UI (TenantSwitcher.tsx, 96.94% coverage)
+  - [x] RBAC permissions matrix (Owner / Admin / Member / Viewer) (roles.ts + RolesGuard globally applied)
+  - [x] MFA enrollment + recovery codes (mfa.service.ts + totp.ts + recovery.ts)
+  - [x] Audit log API + UI (PR #1 merged: 85fd695)
 
 ### 🟡 v0.3.0 — Workspace Productivity
 
-- [ ] Email integration (Stalwart IMAP/SMTP)
-- [ ] Real-time chat (WebSocket)
-- [ ] File upload + MinIO integration
-- [ ] Project management UI
-- [ ] Document templates
+  - [x] Email integration (Stalwart IMAP/SMTP) — PR #2 merged: 7fe76b1 (MailController + MailModule wired)
+  - [x] Real-time chat (WebSocket) — PR #3 open: f86f1c7 (chat.gateway.ts + realtime.module.ts)
+  - [x] File upload + MinIO integration — PR #4 ready: ac7cd2b (presigned PUT/GET, StorageModule)
+  - [ ] Project management UI
+  - [ ] Document templates
+
+  v0.3.0 core workspace features (Email, Chat, Files) are complete; PM UI + Document templates deferred to v0.3.1.
 
 ### 🔴 v0.4.0 — Analytics & Insights
 
@@ -386,6 +388,13 @@ This means:
 - 💬 [Discussions](https://github.com/open-uppu/omyxia/discussions)
 - 🐛 [Issue Tracker](https://github.com/open-uppu/omyxia/issues)
 - 🔒 [Security Policy](SECURITY.md)
+
+---
+
+## 🤖 Workboard Orchestration
+
+Internal dev workflow uses OpenClaw Workboard plugin (v2026.6.10) for multi-agent task coordination.
+Workers run autonomously and post PRs for human review.
 
 ---
 

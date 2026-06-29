@@ -22,6 +22,7 @@ import { SpecializedModule } from './modules/specialized/specialized.module';
 import { GovernanceModule } from './modules/governance/governance.module';
 import { HealthController } from './modules/health/health.controller';
 import { StorageModule } from './storage/storage.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { StorageModule } from './storage/storage.module';
     SpecializedModule,
     GovernanceModule,
     StorageModule,
+    RealtimeModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: RolesGuard }],

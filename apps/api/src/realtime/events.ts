@@ -25,7 +25,7 @@ export interface ServerEvents {
   'connection:error': (payload: ConnectionErrorPayload) => void;
 
   // Auth
-  'auth:success': (payload: AuthSuccess: AuthSuccessPayload) => void;
+  'auth:success': (payload: AuthSuccessPayload) => void;
   'auth:failed': (payload: AuthFailedPayload) => void;
 
   // Notifications

@@ -56,12 +56,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     head/metadata, getMetadata NotFound, getClient/getBucketName accessors)
   - 5 e2e tests in `test/e2e/files.e2e-spec.ts` (boots, full happy path,
     cross-tenant 404, delete cleanup, TTL cap)
+- **Real-time chat (Phase C)** — `@nestjs/websockets` + `socket.io` under `/realtime` namespace
+  - JWT handshake gate (`RealtimeGateway`): accepts `auth.token` or `query.token`,
+    joins `user:<id>` + `tenant:<id>` rooms, auto-joins every chat channel the
+    user is a member of, marks online via `PresenceService` (Redis), and
+    broadcasts `presence:online` to the tenant room
+  - `presence:heartbeat` refreshes the Redis TTL
+  - Disconnect marks offline and broadcasts `presence:offline`
+  - `ChatGateway` (`chat:message`): membership re-check (defence in depth
+    alongside the REST controller), trims + length-caps content, persists via
+    the existing `ChatService.sendMessage` inside an explicit
+    `TenantContextService.run`, then broadcasts `chat:message:new` (and the
+    legacy `chat:message`) to the channel room
+  - 12 unit tests in `realtime.gateway.spec.ts` (auth gate, handshake, room
+    joining, presence lifecycle, heartbeat, whoami)
+  - 8 unit tests in `chat.gateway.spec.ts` (validation, membership guard,
+    cross-tenant guard, happy path, parentId passthrough)
+  - E2E module-boot smoke test in `test/e2e/realtime.e2e-spec.ts`
 - Real-DB integration guard (`test/integration/schema-drift.integration-spec.ts`) — 5 tests
 - E2E smoke test for Health module (`test/e2e/health.e2e-spec.ts`)
 - Vitest configs for unit + e2e + integration tiers
 - Next.js 15 frontend scaffold (`apps/web/`)
 - ESLint configuration for `apps/api/` and `apps/web/`
 - `CONTRIBUTING.md`, `LICENSE` (AGPL-3.0), `SECURITY.md`
+
+### Fixed
+- Typo in `src/realtime/events.ts` ServerEvents map:
+  `'auth:success': (payload: AuthSuccess: AuthSuccessPayload)` ->
+  `payload: AuthSuccessPayload`
 
 ### Fixed
 - **Schema-vs-services drift (46 TS errors → 0):**

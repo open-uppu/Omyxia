@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Post, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -6,8 +6,10 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
-  async signup(@Body() body: { email: string; password: string; name: string; tenantName: string }) {
-    return this.authService.signup(body.email, body.password, body.name, body.tenantName);
+  async signup(
+    @Body() body: { email: string; password: string; name: string; tenantName: string; locale?: string },
+  ) {
+    return this.authService.signup(body);
   }
 
   @Post('login')
@@ -15,8 +17,16 @@ export class AuthController {
     return this.authService.login(body.email, body.password);
   }
 
-  @Post('switch-tenant')
-  async switchTenant(@Body() body: { userId: string; tenantId: string }) {
-    return this.authService.switchTenant(body.userId, body.tenantId);
+  /**
+   * Complete onboarding: rename tenant, set locale, set fiscal year start.
+   * Marks tenant.settings.onboardingComplete = true.
+   */
+  @Post('onboarding/complete')
+  async completeOnboarding(
+    @Req() req: any,
+    @Body() body: { tenantName?: string; locale?: string; fiscalYearStart?: string },
+  ) {
+    if (!req.user?.sub) throw new ForbiddenException('Unauthenticated');
+    return this.authService.completeOnboarding(body);
   }
 }

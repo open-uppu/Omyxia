@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
 import { BiService } from './bi.service';
+import { Roles } from '../auth/rbac/roles.decorator';
 
 @Controller('bi')
 export class BiController {
@@ -10,11 +11,13 @@ export class BiController {
     return this.service.listDashboards();
   }
 
+  @Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER')
   @Post('dashboards')
   create(@Body() body: any) {
     return this.service.createDashboard(body);
   }
 
+  @Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER')
   @Post('dashboards/:id/snapshot')
   snapshot(@Param('id') id: string, @Body() body: any) {
     return this.service.snapshot(id, body.data, body.parameters);
@@ -30,11 +33,13 @@ export class BiController {
     return this.service.listKpis();
   }
 
+  @Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER')
   @Post('kpis')
   createKpi(@Body() body: any) {
     return this.service.createKpi(body);
   }
 
+  @Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER')
   @Post('kpis/:id/values')
   recordValue(@Param('id') id: string, @Body() body: any) {
     return this.service.recordKpiValue(id, body.value, body.period);

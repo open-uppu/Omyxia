@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { JournalService } from './journal.service';
+import { Roles } from '../auth/rbac/roles.decorator';
 
 @Controller('journals')
 export class JournalController {
@@ -10,6 +11,7 @@ export class JournalController {
     return this.service.list();
   }
 
+  @Roles('OWNER', 'ADMIN', 'ACCOUNTANT')
   @Post()
   create(@Body() body: any) {
     return this.service.create({

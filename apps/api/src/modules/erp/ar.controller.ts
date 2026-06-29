@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { ArService } from './ar.service';
+import { Roles } from '../auth/rbac/roles.decorator';
 
 @Controller('ar')
 export class ArController {
@@ -10,6 +11,7 @@ export class ArController {
     return this.service.listCustomers();
   }
 
+  @Roles('OWNER', 'ADMIN', 'ACCOUNTANT')
   @Post('customers')
   createCustomer(@Body() body: any) {
     return this.service.createCustomer(body);
@@ -20,6 +22,7 @@ export class ArController {
     return this.service.listInvoices(status);
   }
 
+  @Roles('OWNER', 'ADMIN', 'ACCOUNTANT')
   @Post('invoices')
   createInvoice(@Body() body: any) {
     return this.service.createInvoice(body);

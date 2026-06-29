@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { TaxService } from './tax.service';
+import { Roles } from '../auth/rbac/roles.decorator';
 
 @Controller('tax')
 export class TaxController {
@@ -10,6 +11,7 @@ export class TaxController {
     return this.service.listRates();
   }
 
+  @Roles('OWNER', 'ADMIN', 'ACCOUNTANT')
   @Post('rates')
   createRate(@Body() body: any) {
     return this.service.createRate({
@@ -18,6 +20,7 @@ export class TaxController {
     });
   }
 
+  @Roles('OWNER', 'ADMIN', 'ACCOUNTANT')
   @Post('seed-thai')
   seedThai() {
     return this.service.seedThaiDefaults();

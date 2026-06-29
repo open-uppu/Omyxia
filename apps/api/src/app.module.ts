@@ -3,7 +3,13 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { TenantContextModule } from './common/tenant-context/tenant-context.module';
+import { AuditModule } from './common/audit/audit.module';
+import { AuditLogsModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { MfaModule } from './modules/mfa/mfa.module';
+import { RbacModule } from './modules/auth/rbac/rbac.module';
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from './modules/auth/rbac/roles.guard';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
@@ -24,7 +30,11 @@ import { HealthController } from './modules/health/health.controller';
     }),
     PrismaModule,
     TenantContextModule,
+    AuditModule,
+    AuditLogsModule,
     AuthModule,
+    MfaModule,
+    RbacModule,
     TenantsModule,
     EmployeesModule,
     DepartmentsModule,
@@ -36,5 +46,6 @@ import { HealthController } from './modules/health/health.controller';
     GovernanceModule,
   ],
   controllers: [HealthController],
+  providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
 })
 export class AppModule {}

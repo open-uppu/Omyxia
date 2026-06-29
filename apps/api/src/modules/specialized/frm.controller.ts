@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { FrmService } from './frm.service';
+import { Roles } from '../auth/rbac/roles.decorator';
 
 @Controller('frm')
 export class FrmController {
@@ -10,6 +11,7 @@ export class FrmController {
     return this.service.listCreditAssessments();
   }
 
+  @Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER')
   @Post('credit-assessments')
   assess(@Body() body: any) {
     return this.service.assessParty(body.partyType, body.partyId, body.creditLimit);

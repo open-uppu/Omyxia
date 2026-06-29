@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
 import { CrmService } from './crm.service';
+import { Roles } from '../auth/rbac/roles.decorator';
 
 @Controller('crm')
 export class CrmController {
@@ -11,6 +12,7 @@ export class CrmController {
   }
 
   @Post('pipelines')
+  @Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER')
   createPipeline(@Body() body: { name: string; stages: string[] }) {
     return this.service.createPipeline(body);
   }
@@ -21,16 +23,19 @@ export class CrmController {
   }
 
   @Post('leads')
+  @Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER')
   createLead(@Body() body: any) {
     return this.service.createLead(body);
   }
 
   @Patch('leads/:id/stage')
+  @Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER')
   updateLeadStage(@Param('id') id: string, @Body('stage') stage: string) {
     return this.service.updateLeadStage(id, stage);
   }
 
   @Delete('leads/:id')
+  @Roles('OWNER', 'ADMIN')
   deleteLead(@Param('id') id: string) {
     return this.service.deleteLead(id);
   }
@@ -41,6 +46,7 @@ export class CrmController {
   }
 
   @Post('activities')
+  @Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER')
   createActivity(@Body() body: any) {
     return this.service.createActivity(body);
   }

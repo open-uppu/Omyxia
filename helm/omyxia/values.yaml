@@ -1,0 +1,72 @@
+# Default values for omyxia
+replicaCount: 2
+
+image:
+  repository: ghcr.io/open-uppu/omyxia
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-body-size: "16m"
+  hosts:
+    - host: omyxia.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: omyxia-tls
+      hosts:
+        - omyxia.example.com
+
+resources:
+  api:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  web:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+env:
+  NODE_ENV: production
+  DATABASE_URL_REF: omyxia/database
+  REDIS_URL_REF: omyxia/redis
+  JWT_SECRET_REF: omyxia/jwt
+  S3_ENDPOINT_REF: omyxia/s3
+  S3_BUCKET_REF: omyxia/s3-bucket
+
+postgres:
+  enabled: true
+  auth:
+    existingSecret: omyxia/postgres
+    database: omyxia
+
+redis:
+  enabled: true
+  auth:
+    existingSecret: omyxia/redis

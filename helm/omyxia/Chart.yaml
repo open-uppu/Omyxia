@@ -1,0 +1,15 @@
+apiVersion: v2
+name: omyxia
+description: Multi-tenant Enterprise IT Master Blueprint
+type: application
+version: 0.4.0
+appVersion: "1.0.0"
+keywords:
+  - multi-tenant
+  - saas
+  - nestjs
+  - nextjs
+  - enterprise
+maintainers:
+  - name: Open-Uppu Team
+    email: jjitamornpak@gmail.com

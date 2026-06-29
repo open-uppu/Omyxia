@@ -21,6 +21,7 @@ import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { SpecializedModule } from './modules/specialized/specialized.module';
 import { GovernanceModule } from './modules/governance/governance.module';
 import { HealthController } from './modules/health/health.controller';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { HealthController } from './modules/health/health.controller';
     WorkspaceModule,
     SpecializedModule,
     GovernanceModule,
+    StorageModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: RolesGuard }],

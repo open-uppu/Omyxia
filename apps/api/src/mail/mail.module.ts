@@ -5,6 +5,7 @@ import mailerConfig from './mailer.config';
 import { SmtpService } from './smtp.service';
 import { ImapService } from './imap.service';
 import { MailService } from './mail.service';
+import { MailController } from './mail.controller';
 
 @Global()
 @Module({
@@ -12,6 +13,7 @@ import { MailService } from './mail.service';
     ConfigModule.forFeature(mailerConfig),
     ScheduleModule.forRoot(),
   ],
+  controllers: [MailController],
   providers: [SmtpService, ImapService, MailService],
   exports: [SmtpService, ImapService, MailService],
 })

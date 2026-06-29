@@ -102,6 +102,7 @@ model User {
   FileFolder        FileFolder[]
   FileItem          FileItem[]
   mfaFactors        MfaFactor[]
+  refreshTokens     RefreshToken[]
   sessions          UserSession[]
   tenants           UserTenant[]
 
@@ -137,6 +138,21 @@ model UserSession {
   @@index([expiresAt], map: "idx_user_session_expires")
   @@index([token], map: "idx_user_session_token")
   @@index([userId], map: "idx_user_session_user")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime @db.Timestamp(6)
+  revokedAt DateTime? @db.Timestamp(6)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_refresh_token_user")
+  @@index([expiresAt], map: "idx_refresh_token_expires")
 }
 
 model Employee {
@@ -1455,6 +1471,7 @@ enum TenantPlan {
 }
 
 enum TenantRole {
+  SUPER_ADMIN
   OWNER
   ADMIN
   HR_MANAGER

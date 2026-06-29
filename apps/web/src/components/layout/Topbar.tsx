@@ -108,6 +108,11 @@ export function Topbar({
         <div className="ml-1 sm:ml-3">
           <TenantSwitcher current={currentTenant} tenants={tenants} />
         </div>
+        <nav className="ml-4 flex items-center gap-3 text-sm text-muted-foreground">
+          <Link href="/audit" className="hover:text-foreground" data-testid="nav-audit">
+            Audit
+          </Link>
+        </nav>
 
         <div className="flex-1" />
 

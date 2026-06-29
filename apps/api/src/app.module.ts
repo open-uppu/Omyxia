@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { TenantContextModule } from './common/tenant-context/tenant-context.module';
 import { AuditModule } from './common/audit/audit.module';
+import { AuditLogsModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { MfaModule } from './modules/mfa/mfa.module';
 import { RbacModule } from './modules/auth/rbac/rbac.module';
@@ -30,6 +31,7 @@ import { HealthController } from './modules/health/health.controller';
     PrismaModule,
     TenantContextModule,
     AuditModule,
+    AuditLogsModule,
     AuthModule,
     MfaModule,
     RbacModule,

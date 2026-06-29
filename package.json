@@ -1,6 +1,6 @@
 {
   "name": "omyxia",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Omyxia — Multi-tenant Enterprise IT Master Blueprint (SaaS) — OSS-first, RLS-enforced tenant isolation",
   "license": "AGPL-3.0",

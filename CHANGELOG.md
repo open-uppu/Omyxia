@@ -8,6 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Project Management + Document Templates (Phase E / v0.3.1)** — minimal viable
+  project + document-template surface for tenant-scoped productivity
+  - New backend controllers: `ProjectsController` (`/projects`) and
+    `DocumentTemplatesController` (`/docs/templates`) registered in
+    `SpecializedModule`. Project CRUD includes nested tasks
+    (`GET/POST/PATCH/DELETE /projects/:id/tasks[/:taskId]`).
+  - New `DocumentTemplatesService` with a `POST /docs/templates/:id/render`
+    endpoint. Renders HTML templates with `{{var}}` (escaped) and
+    `{{{var}}}` (sanitized raw) placeholders. Variable names must match
+    `[a-zA-Z_][a-zA-Z0-9_]{0,63}`; unknown names render empty.
+  - Render security: `escapeHtml`, `sanitizeRawHtml` (strips
+    `<script>`/`<iframe>`/`<object>`/`<embed>`/`<form>`/`<style>` blocks,
+    `on*=` handlers, and `javascript:`/`vbscript:`/`data:text/html` URLs).
+    Each value is clamped to 16 KiB.
+  - Field whitelisting in services — bodies can never overwrite
+    `tenantId`, `id`, `createdAt`, or `updatedAt`.
+  - 61 new Vitest unit tests (projects + document-templates + render
+    helpers) — 99.25 % stmt / 92.22 % branch coverage on the new files.
+  - Frontend pages (`/projects`, `/projects/:id`, `/docs/templates`,
+    `/docs/templates/:id`) wired through a typed `api.projects.*` /
+    `api.templates.*` client. The renderer previews in a sandboxed
+    iframe so raw HTML never reaches our React tree.
+  - 43 new frontend tests (ProjectsList, ProjectDetail,
+    DocumentTemplatesList, TemplateRenderer) — 97.32 % stmt / 83.83 %
+    branch coverage on the new components.
+  - Test totals: 192 → **361** (api 253 + web 108).
 - **File upload + MinIO (Phase D)** — S3-compatible object storage wired into the Workspace `files` surface via presigned URLs
   - `StorageModule` (global) wraps the existing `StorageService` (uses
     `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`; same code path

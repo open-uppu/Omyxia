@@ -152,4 +152,99 @@ export const api = {
     send: (input: { emails: string[]; role?: string }) =>
       request<{ sent: number }>('/invites', { method: 'POST', json: input }),
   },
+  // Phase E — Project Management (v0.3.1)
+  projects: {
+    list: () => request<Project[]>('/projects', { method: 'GET' }),
+    get: (id: string) => request<Project>(`/projects/${encodeURIComponent(id)}`, { method: 'GET' }),
+    create: (input: { name: string; description?: string; status?: string; ownerId?: string }) =>
+      request<Project>('/projects', { method: 'POST', json: input }),
+    update: (id: string, input: Partial<{ name: string; description: string; status: string }>) =>
+      request<Project>(`/projects/${encodeURIComponent(id)}`, { method: 'PATCH', json: input }),
+    delete: (id: string) =>
+      request<{ id: string; deleted: true }>(`/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    listTasks: (projectId: string) =>
+      request<ProjectTask[]>(`/projects/${encodeURIComponent(projectId)}/tasks`, { method: 'GET' }),
+    createTask: (projectId: string, input: { title: string; description?: string; priority?: string; status?: string }) =>
+      request<ProjectTask>(`/projects/${encodeURIComponent(projectId)}/tasks`, { method: 'POST', json: input }),
+    updateTask: (projectId: string, taskId: string, input: Partial<{ title: string; description: string; priority: string; status: string }>) =>
+      request<ProjectTask>(
+        `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`,
+        { method: 'PATCH', json: input },
+      ),
+    updateTaskStatus: (projectId: string, taskId: string, status: string) =>
+      request<ProjectTask>(
+        `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}/status`,
+        { method: 'PATCH', json: { status } },
+      ),
+    deleteTask: (projectId: string, taskId: string) =>
+      request<{ id: string; deleted: true }>(
+        `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`,
+        { method: 'DELETE' },
+      ),
+  },
+  // Phase E — Document Templates (v0.3.1)
+  templates: {
+    list: () => request<DocumentTemplate[]>('/docs/templates', { method: 'GET' }),
+    get: (id: string) => request<DocumentTemplate>(`/docs/templates/${encodeURIComponent(id)}`, { method: 'GET' }),
+    create: (input: { name: string; category?: string; bodyHtml: string; variables?: string[] }) =>
+      request<DocumentTemplate>('/docs/templates', { method: 'POST', json: input }),
+    update: (id: string, input: Partial<{ name: string; category: string; bodyHtml: string; variables: string[]; isActive: boolean }>) =>
+      request<DocumentTemplate>(`/docs/templates/${encodeURIComponent(id)}`, { method: 'PATCH', json: input }),
+    delete: (id: string) =>
+      request<{ id: string; deleted: true }>(`/docs/templates/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    render: (id: string, variables: Record<string, string | number>) =>
+      request<RenderResult>(
+        `/docs/templates/${encodeURIComponent(id)}/render`,
+        { method: 'POST', json: { variables } },
+      ),
+  },
 };
+
+// Phase E — typed shapes for Project Management
+export interface Project {
+  id: string;
+  tenantId: string;
+  name: string;
+  code?: string | null;
+  description?: string | null;
+  status: string;
+  ownerId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  tasks?: ProjectTask[];
+}
+
+export interface ProjectTask {
+  id: string;
+  tenantId: string;
+  projectId: string;
+  parentId?: string | null;
+  assigneeId?: string | null;
+  title: string;
+  description?: string | null;
+  status: string;
+  priority: string;
+  dueDate?: string | null;
+  estimatedHours?: number | string | null;
+  actualHours?: number | string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DocumentTemplate {
+  id: string;
+  tenantId: string;
+  name: string;
+  category?: string | null;
+  bodyHtml: string;
+  variables: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RenderResult {
+  templateId: string;
+  title: string;
+  renderedHtml: string;
+}

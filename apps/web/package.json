@@ -1,6 +1,6 @@
 {
   "name": "@omyxia/web",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Omyxia Next.js 15 Frontend - v0.2.0 Auth UI",
   "scripts": {

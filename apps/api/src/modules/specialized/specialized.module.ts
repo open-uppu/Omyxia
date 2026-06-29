@@ -3,10 +3,10 @@ import { FrmService } from './frm.service';
 import { FrmController } from './frm.controller';
 import { MasService } from './mas.service';
 import { MasController } from './mas.controller';
-import { PmsService } from './pms.service';
-import { PmsController } from './pms.controller';
-import { DmsService } from './dms.service';
-import { DmsController } from './dms.controller';
+import { ProjectsService } from './projects.service';
+import { ProjectsController } from './projects.controller';
+import { DocumentTemplatesService } from './document-templates.service';
+import { DocumentTemplatesController } from './document-templates.controller';
 import { WmsService } from './wms.service';
 import { WmsController } from './wms.controller';
 import { SrmService } from './srm.service';
@@ -22,19 +22,40 @@ import { BackupController } from './backup.controller';
 
 @Module({
   controllers: [
-    FrmController, MasController, PmsController, DmsController,
-    WmsController, SrmController, ItsmController, FmsController,
-    EndpointSecurityController, BackupController,
+    FrmController,
+    MasController,
+    ProjectsController,
+    DocumentTemplatesController,
+    WmsController,
+    SrmController,
+    ItsmController,
+    FmsController,
+    EndpointSecurityController,
+    BackupController,
   ],
   providers: [
-    FrmService, MasService, PmsService, DmsService,
-    WmsService, SrmService, ItsmService, FmsService,
-    EndpointSecurityService, BackupService,
+    FrmService,
+    MasService,
+    ProjectsService,
+    DocumentTemplatesService,
+    WmsService,
+    SrmService,
+    ItsmService,
+    FmsService,
+    EndpointSecurityService,
+    BackupService,
   ],
   exports: [
-    FrmService, MasService, PmsService, DmsService,
-    WmsService, SrmService, ItsmService, FmsService,
-    EndpointSecurityService, BackupService,
+    FrmService,
+    MasService,
+    ProjectsService,
+    DocumentTemplatesService,
+    WmsService,
+    SrmService,
+    ItsmService,
+    FmsService,
+    EndpointSecurityService,
+    BackupService,
   ],
 })
 export class SpecializedModule {}

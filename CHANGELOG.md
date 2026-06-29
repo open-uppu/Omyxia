@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **BI Dashboard backend (v0.4.0)**
+  - `BiService` (extends TenantScopedService): `listDashboards`,
+    `createDashboard`, `snapshot`, `listSnapshots` — all tenant-scoped.
+  - 6 new unit tests covering tenant isolation, snapshot persistence,
+    defense-in-depth empty-tenant rejection.
+- **BI Dashboard frontend (v0.4.0)**
+  - `/dashboards` page wired through `fetch /api/bi/dashboards` with
+    empty-state + loading indicator + 2 component tests.
+- **Data export service (v0.4.0)**
+  - `ExportService` (RFC-4180 CSV escaping) + `xlsx` / `pdf` placeholders.
+  - 7 unit tests including escape edges and unsupported-format rejection.
+- **Scheduled reports (v0.4.0)**
+  - `ScheduledReportsService` with cron-based `runDue()`,
+    `create/list/cancel`, tenant isolation, idempotent cancel,
+    lastRunAt rate-limit gate.
+  - 5 unit tests covering all paths.
+- Test totals: 273 → **291** (api 286 + bi/export/scheduled scenarios).
 - **Project Management + Document Templates (Phase E / v0.3.1)** — minimal viable
   project + document-template surface for tenant-scoped productivity
   - New backend controllers: `ProjectsController` (`/projects`) and

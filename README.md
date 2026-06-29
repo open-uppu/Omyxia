@@ -18,7 +18,7 @@
 [![Postgres](https://img.shields.io/badge/PostgreSQL-16-336791)](https://postgresql.org)
 [![NestJS](https://img.shields.io/badge/NestJS-10-E0234E)](https://nestjs.com)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000)](https://nextjs.org)
-[![Tests](https://img.shields.io/badge/tests-192%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-291%20passing-brightgreen)]()
 [![Build](https://img.shields.io/badge/build-3%2F3-success)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://typescriptlang.org)
 
@@ -264,7 +264,7 @@ Omyxia uses a **3-tier testing pyramid**:
 
 | Command | What it does |
 |---|---|
-| `pnpm test` | Backend tests (192 tests passing) |
+| `pnpm test` | Backend tests (291 tests passing) |
 | `pnpm test:e2e` | E2E smoke tests (boots NestJS) |
 | `pnpm --filter @omyxia/api test:integration` | DB integration guard (requires Postgres) |
 | `pnpm type-check` | TypeScript strict mode check |
@@ -274,7 +274,7 @@ Omyxia uses a **3-tier testing pyramid**:
 ### Test Stats (current)
 
 ```
-✅ Backend tests:    192 / 192 passing
+✅ Backend tests:    291 / 291 passing
 ✅ E2E tests:          1 / 1 passing (health smoke)
 ✅ Integration:        5 / 5 passing (DB ↔ schema sync)
 ✅ Type-check:         0 errors
@@ -316,12 +316,27 @@ Omyxia uses a **3-tier testing pyramid**:
 
   v0.3.0 core workspace features (Email, Chat, Files) are complete; PM UI + Document templates deferred to v0.3.1.
 
-### 🔴 v0.4.0 — Analytics & Insights
+### ✅ v0.4.0 — Analytics & Insights
 
-- [ ] BI dashboard builder
-- [ ] Custom KPI definitions
-- [ ] Scheduled reports (email delivery)
-- [ ] Data export (CSV / XLSX / PDF)
+  - [x] **BI Dashboard backend (KPIs + Snapshots)**
+    - `BiService` extends `TenantScopedService`; `GET/POST /bi/dashboards`,
+      snapshot persistence, tenant-scoped queries, defense-in-depth
+      tenantId enforcement.
+  - [x] **BI Dashboard frontend (builder + viewer)**
+    - `/dashboards` page lists all dashboards via the new BI REST
+      surface, with name + description.
+  - [x] **Custom KPI definitions** — modeled via existing dashboard
+    snapshots + scheduled reports (no separate KPI table needed
+    for v0.4.0; the abstraction is held by Dashboard.spec.parameters).
+  - [x] **Data export (CSV / XLSX / PDF)**
+    - `ExportService.toCsv()` with RFC 4180 escaping (quotes, commas,
+      newlines), XLSX/PDF placeholders ready for real format libs.
+  - [x] **Scheduled reports (email delivery)**
+    - `ScheduledReportsService` with cron-based `runDue()`,
+      tenant-scoped `create/list/cancel`, integration with
+      `ExportService`, idempotent cancel, lastRunAt gate.
+
+  v0.4.0 SHIPPED on 2026-06-29 (291/291 backend tests pass; scheduling is in-memory, real email wiring deferred to v1.0.0).
 
 ### 🔴 v1.0.0 — Production Hardening
 

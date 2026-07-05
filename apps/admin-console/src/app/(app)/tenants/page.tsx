@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Building2 } from 'lucide-react';
+import { FeatureGuard } from '@/components/entitlements';
 
 export const metadata: Metadata = {
   title: 'Tenants',
@@ -9,8 +10,23 @@ export const metadata: Metadata = {
 };
 
 export default function TenantsPage() {
+  // P3.2 — gate the Tenants page behind `admin.tenants`. The
+  // FeatureGuard is a client component; the children below are
+  // server-rendered and passed through to the client tree.
   return (
-    <div className="space-y-6" data-testid="page-tenants">
+    <FeatureGuard
+      feature="admin.tenants"
+      featureLabel="Tenants"
+      fallback={
+        <div
+          className="rounded-md border border-dashed py-12 text-center text-sm text-muted-foreground"
+          data-testid="page-tenants-pending"
+        >
+          Checking your access…
+        </div>
+      }
+    >
+      <div className="space-y-6" data-testid="page-tenants">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
@@ -41,5 +57,6 @@ export default function TenantsPage() {
         </CardContent>
       </Card>
     </div>
+    </FeatureGuard>
   );
 }

@@ -26,7 +26,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { key: 'tenants', label: 'Tenants', href: '/tenants', icon: Building2, feature: 'admin.tenants' },
   { key: 'plans', label: 'Plans', href: '/plans', icon: Tags, feature: 'admin.plans' },
-  { key: 'audit', label: 'Audit', href: '/audit', icon: ScrollText },
+  // P3.2 — Audit is gated behind ENTERPRISE (`admin.audit`).
+  { key: 'audit', label: 'Audit', href: '/audit', icon: ScrollText, feature: 'admin.audit' },
   { key: 'settings', label: 'Settings', href: '/settings', icon: SettingsIcon },
 ] as const;
 

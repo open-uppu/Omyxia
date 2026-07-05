@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Tags } from 'lucide-react';
+import { FeatureGuard } from '@/components/entitlements';
 
 export const metadata: Metadata = {
   title: 'Plans',
@@ -9,8 +10,21 @@ export const metadata: Metadata = {
 };
 
 export default function PlansPage() {
+  // P3.2 — gate the Plans editor behind `admin.plans` (PRO+).
   return (
-    <div className="space-y-6" data-testid="page-plans">
+    <FeatureGuard
+      feature="admin.plans"
+      featureLabel="Plans"
+      fallback={
+        <div
+          className="rounded-md border border-dashed py-12 text-center text-sm text-muted-foreground"
+          data-testid="page-plans-pending"
+        >
+          Checking your access…
+        </div>
+      }
+    >
+      <div className="space-y-6" data-testid="page-plans">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
@@ -49,6 +63,7 @@ export default function PlansPage() {
         </CardContent>
       </Card>
     </div>
+    </FeatureGuard>
   );
 }
 

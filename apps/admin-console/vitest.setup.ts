@@ -27,3 +27,21 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
     dispatchEvent: () => false,
   });
 }
+
+// jsdom doesn't implement `navigation` for non-href mailto: / external
+// links. The upgrade-modal CTA uses mailto:; suppress the noisy
+// "Not implemented" warning so the test output stays clean. We're
+// asserting impression events, not navigation, in those specs.
+const originalJsdomNotImplemented = (
+  console as unknown as { error?: (...args: unknown[]) => void }
+).error;
+if (originalJsdomNotImplemented) {
+  console.error = ((msg: unknown, ...rest: unknown[]) => {
+    if (typeof msg === 'string' && msg.includes('Not implemented: navigation')) return;
+    (originalJsdomNotImplemented as (...args: unknown[]) => void).call(
+      console,
+      msg,
+      ...rest
+    );
+  }) as typeof console.error;
+}

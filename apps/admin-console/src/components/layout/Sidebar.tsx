@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { NAV_ITEMS, findNavByHref, type NavItem } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { useFeature } from '@/components/entitlements';
 
 interface SidebarProps {
   /**
@@ -25,6 +26,9 @@ interface SidebarProps {
  *  - Hover: subtle accent background.
  *  - Icon + label (icon-only on <md, hidden via Tailwind `md:inline`).
  *  - Hidden on <md by default — the layout wraps it in a Sheet trigger.
+ *  - Items whose `feature` flag is `false` are HIDDEN (P3.2). We use
+ *    `useFeature()` (default-false while loading) so the user never
+ *    sees an item that disappears mid-frame.
  */
 export function Sidebar({ activeHref, className }: SidebarProps) {
   const pathname = usePathname() ?? activeHref ?? '';
@@ -60,7 +64,11 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
         data-testid="sidebar-nav"
       >
         {NAV_ITEMS.map((item) => (
-          <SidebarLink key={item.key} item={item} isActive={active?.key === item.key} />
+          <NavItemRow
+            key={item.key}
+            item={item}
+            isActive={active?.key === item.key}
+          />
         ))}
       </nav>
 
@@ -69,6 +77,31 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
       </div>
     </aside>
   );
+}
+
+/**
+ * Renders a single NAV_ITEM row. Calls `useFeature(item.feature)`
+ * exactly once per row at a stable position so React's Rules of
+ * Hooks are satisfied, and returns `null` when the feature is
+ * disabled.
+ *
+ * Items without a `feature` flag (e.g. Dashboard, Settings) are
+ * always rendered.
+ */
+function NavItemRow({
+  item,
+  isActive,
+}: {
+  item: NavItem;
+  isActive: boolean;
+}) {
+  // useFeature defaults to `false` while loading — we still render
+  // `null` for gated items during the brief loading window so the
+  // sidebar doesn't flash every item on first paint. Items without a
+  // feature flag skip the check entirely.
+  const enabled = useFeature(item.feature ?? '__no_feature__');
+  if (item.feature && !enabled) return null;
+  return <SidebarLink item={item} isActive={isActive} />;
 }
 
 interface SidebarLinkProps {

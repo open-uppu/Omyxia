@@ -4,9 +4,10 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
-import { NAV_ITEMS, findNavByHref } from '@/lib/constants';
+import { NAV_ITEMS, findNavByHref, type NavItem } from '@/lib/constants';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import { useFeature } from '@/components/entitlements';
 
 interface MobileNavProps {
   open: boolean;
@@ -20,6 +21,10 @@ interface MobileNavProps {
  * dependency surface small. The focus-trap is intentionally minimal
  * (Escape + outside-click + close button). A future card can swap in
  * the Radix primitive for full a11y compliance.
+ *
+ * Filtering (P3.2): each row consults `useFeature(item.feature)` and
+ * renders `null` when the feature is disabled — same semantics as
+ * the desktop `Sidebar`.
  */
 export function MobileNav({ open, onClose }: MobileNavProps) {
   const pathname = usePathname() ?? '';
@@ -77,33 +82,57 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
           </Button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-3" aria-label="Primary navigation (mobile)">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = active?.key === item.key;
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                onClick={onClose}
-                data-testid={`mobile-nav-link-${item.key}`}
-                data-active={isActive || undefined}
-                aria-current={isActive ? 'page' : undefined}
-                className={cn(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm',
-                  'hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  isActive
-                    ? 'bg-sidebar-accent font-medium text-sidebar-foreground'
-                    : 'text-sidebar-foreground/80'
-                )}
-              >
-                <Icon className="h-4 w-4" aria-hidden />
-                <span className="truncate">{item.label}</span>
-              </Link>
-            );
-          })}
+        <nav
+          className="flex-1 space-y-1 overflow-y-auto px-2 py-3"
+          aria-label="Primary navigation (mobile)"
+        >
+          {NAV_ITEMS.map((item) => (
+            <MobileNavItemRow
+              key={item.key}
+              item={item}
+              isActive={active?.key === item.key}
+              onClose={onClose}
+            />
+          ))}
         </nav>
       </aside>
     </div>
+  );
+}
+
+/**
+ * Single NAV_ITEM row — calls `useFeature(item.feature)` at a
+ * stable position and returns `null` when gated off.
+ */
+function MobileNavItemRow({
+  item,
+  isActive,
+  onClose,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  onClose: () => void;
+}) {
+  const enabled = useFeature(item.feature ?? '__no_feature__');
+  if (item.feature && !enabled) return null;
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      onClick={onClose}
+      data-testid={`mobile-nav-link-${item.key}`}
+      data-active={isActive || undefined}
+      aria-current={isActive ? 'page' : undefined}
+      className={cn(
+        'flex items-center gap-3 rounded-md px-3 py-2 text-sm',
+        'hover:bg-sidebar-accent hover:text-sidebar-foreground',
+        isActive
+          ? 'bg-sidebar-accent font-medium text-sidebar-foreground'
+          : 'text-sidebar-foreground/80'
+      )}
+    >
+      <Icon className="h-4 w-4" aria-hidden />
+      <span className="truncate">{item.label}</span>
+    </Link>
   );
 }

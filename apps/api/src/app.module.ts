@@ -25,6 +25,7 @@ import { GovernanceModule } from './modules/governance/governance.module';
 import { HealthController } from './modules/health/health.controller';
 import { StorageModule } from './storage/storage.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { BillingModule } from './modules/billing/billing.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { RealtimeModule } from './realtime/realtime.module';
     GovernanceModule,
     StorageModule,
     RealtimeModule,
+    BillingModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: RolesGuard }],

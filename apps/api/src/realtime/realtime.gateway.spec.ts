@@ -325,3 +325,41 @@ describe('RealtimeGateway whoami', () => {
     });
   });
 });
+describe('RealtimeGateway.broadcastEntitlementInvalidation (P3.3)', () => {
+  it('returns false when the server is not yet initialised', () => {
+    const jwt = { verify: vi.fn() };
+    const prisma = { chatChannelMember: { findMany: vi.fn(), findUnique: vi.fn() } };
+    const presence = { userOnline: vi.fn(), userOffline: vi.fn(), heartbeat: vi.fn() };
+    const gateway = new RealtimeGateway(jwt as any, prisma as any, presence as any);
+    // NOTE: not calling afterInit — server is undefined.
+
+    const ok = gateway.broadcastEntitlementInvalidation({
+      tenantId: 't-1',
+      reason: 'plan-change',
+      source: 'admin',
+      at: '2026-07-06T10:00:00.000Z',
+      nonce: 1,
+    });
+    expect(ok).toBe(false);
+  });
+
+  it('emits to the tenant room with the canonical event name when initialised', () => {
+    const { gateway } = makeGateway({ jwtVerifyImpl: () => ({}) });
+    const server = (gateway as { server: ReturnType<typeof makeServer> }).server;
+    const toMock = server.to as unknown as ReturnType<typeof vi.fn>;
+
+    const ok = gateway.broadcastEntitlementInvalidation({
+      tenantId: 't-1',
+      reason: 'plan-change',
+      source: 'admin',
+      at: '2026-07-06T10:00:00.000Z',
+      nonce: 7,
+    });
+    expect(ok).toBe(true);
+    expect(toMock).toHaveBeenCalledWith('tenant:t-1');
+    expect(server.emit).toHaveBeenCalledWith(
+      'entitlements:invalidated',
+      expect.objectContaining({ tenantId: 't-1', nonce: 7, reason: 'plan-change' }),
+    );
+  });
+});

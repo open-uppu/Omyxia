@@ -183,7 +183,48 @@ describe('EntitlementsService', () => {
 
     await service.invalidate('tenant-1');
     expect(redis._store.has('entitlements:v1:tenant-1')).toBe(false);
-    expect(publishSpy).toHaveBeenCalledWith('entitlements:invalidated', 'tenant-1');
+    // P3.3: payload is now a JSON-serialised EntitlementInvalidationMessage,
+    // not a bare tenantId. The channel name is also singular + imperative
+    // (`entitlement:invalidate`) — the P3.1 plural-past channel
+    // (`entitlements:invalidated`) is no longer emitted.
+    expect(publishSpy).toHaveBeenCalledWith(
+      'entitlement:invalidate',
+      expect.stringMatching(
+        /^\{"tenantId":"tenant-1","reason":"manual","source":"admin","at":"[^"]+","nonce":1\}$/,
+      ),
+    );
+  });
+
+  it('invalidate() respects the reason/source options', async () => {
+    redis._store.set('entitlements:v1:tenant-2', '{}');
+    const publishSpy = vi.spyOn(redis, 'publish');
+
+    await service.invalidate('tenant-2', {
+      reason: 'plan-change',
+      source: 'admin',
+    });
+    expect(publishSpy).toHaveBeenCalledWith(
+      'entitlement:invalidate',
+      expect.stringContaining('"reason":"plan-change"'),
+    );
+  });
+
+  it('invalidate() increments the per-tenant nonce on every call', async () => {
+    redis._store.set('entitlements:v1:tenant-3', '{}');
+    const publishSpy = vi.spyOn(redis, 'publish');
+
+    await service.invalidate('tenant-3');
+    await service.invalidate('tenant-3');
+    await service.invalidate('tenant-3');
+    const calls = publishSpy.mock.calls.filter(
+      (c) => c[0] === 'entitlement:invalidate',
+    );
+    expect(calls).toHaveLength(3);
+    const nonces = calls.map((c) => {
+      const m = JSON.parse(c[1] as string);
+      return m.nonce;
+    });
+    expect(nonces).toEqual([1, 2, 3]);
   });
 
   it('applies LEGACY_FULL_ACCESS tier to enable every known module', async () => {

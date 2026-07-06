@@ -36,8 +36,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import type { TenantEntitlements } from './entitlement.types';
+import {
+  ENTITLEMENT_CACHE_KEY_PREFIX,
+  ENTITLEMENT_INVALIDATE_CHANNEL,
+  type EntitlementInvalidationMessage,
+} from './entitlement-invalidation.types';
 
-const CACHE_KEY_PREFIX = 'entitlements:v1:';
+// Re-export so existing callers (P3.1 admin controller) keep working.
+export { ENTITLEMENT_INVALIDATE_CHANNEL } from './entitlement-invalidation.types';
+
+const CACHE_KEY_PREFIX = ENTITLEMENT_CACHE_KEY_PREFIX;
 const DEFAULT_TTL_SECONDS = 5 * 60;
 
 @Injectable()
@@ -95,8 +103,36 @@ export class EntitlementsService {
    * Manually evict a tenant's cached payload.
    * Called from the admin-tenant-suspend / plan-change flows so the
    * change is visible within seconds instead of after the TTL.
+   *
+   * Steps (P3.3 contract):
+   *   1. Drop the local Redis cache entry for this tenant.
+   *   2. Publish a JSON-serialised `EntitlementInvalidationMessage` on
+   *      the `entitlement:invalidate` channel so every other API
+   *      replica:
+   *        a. Drops its own copy of the Redis entry.
+   *        b. Fans-out an `entitlements:invalidated` WebSocket event to
+   *           the `tenant:<tenantId>` room so the FE / admin console
+   *           refresh their `/api/entitlements/me` payload.
+   *
+   * Default `reason='manual'` and `source='admin'` — callers with more
+   * context (Stripe webhook, plan-change endpoint, suspend endpoint)
+   * pass them in via the overload below.
    */
-  async invalidate(tenantId: string): Promise<void> {
+  async invalidate(
+    tenantId: string,
+    options: {
+      reason?: EntitlementInvalidationMessage['reason'];
+      source?: EntitlementInvalidationMessage['source'];
+    } = {},
+  ): Promise<void> {
+    const message: EntitlementInvalidationMessage = {
+      tenantId,
+      reason: options.reason ?? 'manual',
+      source: options.source ?? 'admin',
+      at: new Date().toISOString(),
+      nonce: this.nextNonce(tenantId),
+    };
+
     try {
       await this.redis.del(this.cacheKey(tenantId));
     } catch (err) {
@@ -106,13 +142,33 @@ export class EntitlementsService {
     }
     // Pub/sub so other API replicas evict their in-process copies too.
     try {
-      await this.redis.publish('entitlements:invalidated', tenantId);
+      await this.redis.publish(
+        ENTITLEMENT_INVALIDATE_CHANNEL,
+        JSON.stringify(message),
+      );
     } catch (err) {
       // Publish failure is non-fatal — local eviction already happened.
       this.logger.debug?.(
-        `Redis pub entitlements:invalidated failed for tenant=${tenantId}. ${err?.message ?? err}`,
+        `Redis pub ${ENTITLEMENT_INVALIDATE_CHANNEL} failed for tenant=${tenantId}. ${err?.message ?? err}`,
       );
     }
+  }
+
+  /**
+   * Per-tenant monotonically increasing nonce. Used by FE / admin
+   * console clients to detect out-of-order invalidations when a plan
+   * change + add-on toggle arrive in quick succession.
+   *
+   * Lives in memory only — a process restart resets to 0, which is
+   * acceptable because a restart already implies a fresh in-process
+   * cache state and any in-flight WS subscribers will reconnect.
+   */
+  private readonly nonces = new Map<string, number>();
+  private nextNonce(tenantId: string): number {
+    const current = this.nonces.get(tenantId) ?? 0;
+    const next = current + 1;
+    this.nonces.set(tenantId, next);
+    return next;
   }
 
   // -----------------------------------------------------------------------

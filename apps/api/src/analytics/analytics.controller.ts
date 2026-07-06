@@ -214,7 +214,7 @@ export class AnalyticsController {
       return [];
     }
 
-    return this. return this.analyticsService.getFunnel(
+    return this.analyticsService.getFunnel(
       stepList,
       tenantId,
       from ? new Date(from) : undefined,

@@ -51,6 +51,7 @@ model Tenant {
   FileItem           FileItem[]
   FiscalPeriod       FiscalPeriod[]
   FraudAlert         FraudAlert[]
+  ImpersonationSession ImpersonationSession[]   // v2.0.0 admin console — P1.1
   InventoryItem      InventoryItem[]
   Invoice            Invoice[]
   JournalEntry       JournalEntry[]
@@ -71,6 +72,7 @@ model Tenant {
   SupplierScore      SupplierScore[]
   TaxRate            TaxRate[]
   TaxTransaction     TaxTransaction[]
+  TenantEntitlement  TenantEntitlement[]       // v2.0.0 admin console — P1.1
   ThreatEvent        ThreatEvent[]
   Ticket             Ticket[]
   users              UserTenant[]
@@ -101,6 +103,7 @@ model User {
   Employee          Employee[]
   FileFolder        FileFolder[]
   FileItem          FileItem[]
+  impersonationSessions ImpersonationSession[]   // v2.0.0 admin console — P1.1
   mfaFactors        MfaFactor[]
   refreshTokens     RefreshToken[]
   sessions          UserSession[]
@@ -749,17 +752,18 @@ model MfaFactor {
 }
 
 model AuditLog {
-  id        String      @id @default(cuid())
-  tenantId  String?
-  userId    String?
-  table     String
-  rowId     String?
-  action    AuditAction
-  before    Json?
-  after     Json?
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime    @default(now()) @db.Timestamp(6)
+  id                  String                @id @default(cuid())
+  tenantId            String?
+  userId              String?
+  table               String
+  rowId               String?
+  action              AuditAction
+  before              Json?
+  after               Json?
+  ipAddress           String?
+  userAgent           String?
+  createdAt           DateTime              @default(now()) @db.Timestamp(6)
+  impersonationSessions ImpersonationSession[]   // v2.0.0 admin console — P1.1
 
   @@index([table, rowId], map: "idx_audit_table_row")
   @@index([tenantId, createdAt], map: "idx_audit_tenant_created")
@@ -1288,6 +1292,126 @@ model Invoice {
   @@index([tenantId], map: "idx_invoice_tenant")
   @@index([tenantId, dueDate], map: "idx_invoice_tenant_due")
   @@index([tenantId, status], map: "idx_invoice_tenant_status")
+}
+
+// =========================================================================
+// omyxia v2.0.0 — Admin Console & Tier-based Access (Phase 1.1)
+//
+// Catalog (no tenantId, no RLS):  Plan, PlanFeature, AddOn
+// Per-tenant (tenantId + RLS):    TenantEntitlement, TenantEntitlementAddOn, ImpersonationSession
+//
+// Write access is restricted to SUPER_ADMIN via P1.3 middleware.
+// Feature gating reads via the cache layer (P3.3) on every authed request.
+// =========================================================================
+
+model Plan {
+  id           String                @id @default(cuid())
+  name         String                @unique
+  tier         PlanTier
+  price        Decimal               @db.Decimal(15, 2)
+  description  String?
+  isActive     Boolean               @default(true)
+  sortOrder    Int                   @default(0)
+  createdAt    DateTime              @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime              @default(now()) @updatedAt @db.Timestamp(6)
+  entitlements TenantEntitlement[]
+  features     PlanFeature[]
+
+  @@index([tier], map: "idx_plan_tier")
+  @@index([isActive], map: "idx_plan_active")
+}
+
+model PlanFeature {
+  id         String  @id @default(cuid())
+  planId     String
+  featureKey String
+  enabled    Boolean @default(true)
+  limit      Int?
+  plan       Plan    @relation(fields: [planId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([planId, featureKey])
+  @@index([planId], map: "idx_plan_feature_plan")
+  @@index([featureKey], map: "idx_plan_feature_key")
+}
+
+model AddOn {
+  id           String                   @id @default(cuid())
+  name         String                   @unique
+  slug         String                   @unique
+  price        Decimal                  @db.Decimal(15, 2)
+  appliesTo    AddOnAppliesTo           @default(ALL)
+  description  String?
+  isActive     Boolean                  @default(true)
+  createdAt    DateTime                 @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime                 @default(now()) @updatedAt @db.Timestamp(6)
+  entitlements TenantEntitlementAddOn[]
+
+  @@index([appliesTo], map: "idx_add_on_applies_to")
+  @@index([isActive], map: "idx_add_on_active")
+}
+
+model TenantEntitlement {
+  id          String                    @id @default(cuid())
+  tenantId    String
+  planId      String
+  effectiveAt DateTime                  @db.Timestamp(6)
+  expiresAt   DateTime?                 @db.Timestamp(6)
+  createdAt   DateTime                  @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime                  @default(now()) @updatedAt @db.Timestamp(6)
+  addOns      TenantEntitlementAddOn[]
+  plan        Plan                      @relation(fields: [planId], references: [id], onUpdate: NoAction)
+  tenant      Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([tenantId], map: "idx_tenant_entitlement_tenant")
+  @@index([tenantId, effectiveAt], map: "idx_tenant_entitlement_effective")
+  @@index([planId], map: "idx_tenant_entitlement_plan")
+}
+
+model TenantEntitlementAddOn {
+  id            String             @id @default(cuid())
+  entitlementId String
+  addOnId       String
+  createdAt     DateTime           @default(now()) @db.Timestamp(6)
+  addOn         AddOn              @relation(fields: [addOnId], references: [id], onUpdate: NoAction)
+  entitlement   TenantEntitlement  @relation(fields: [entitlementId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([entitlementId, addOnId])
+  @@index([entitlementId], map: "idx_tenant_ent_addon_ent")
+  @@index([addOnId], map: "idx_tenant_ent_addon_addon")
+}
+
+model ImpersonationSession {
+  id           String    @id @default(cuid())
+  superAdminId String
+  tenantId     String
+  reason       String
+  startedAt    DateTime  @db.Timestamp(6)
+  expiresAt    DateTime  @db.Timestamp(6)
+  endedAt      DateTime? @db.Timestamp(6)
+  auditLogId   String?
+  createdAt    DateTime  @default(now()) @db.Timestamp(6)
+  auditLog     AuditLog? @relation(fields: [auditLogId], references: [id], onUpdate: NoAction)
+  superAdmin   User      @relation(fields: [superAdminId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([tenantId], map: "idx_impersonation_tenant")
+  @@index([superAdminId], map: "idx_impersonation_super_admin")
+  @@index([expiresAt], map: "idx_impersonation_expires")
+  @@index([tenantId, endedAt], map: "idx_impersonation_active")
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  ENTERPRISE
+  LEGACY_FULL_ACCESS
+}
+
+enum AddOnAppliesTo {
+  ALL
+  FREE
+  PRO
+  ENTERPRISE
 }
 
 enum AccountType {

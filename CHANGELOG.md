@@ -25,6 +25,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     lastRunAt rate-limit gate.
   - 5 unit tests covering all paths.
 - Test totals: 273 → **291** (api 286 + bi/export/scheduled scenarios).
+- **Admin Console schema (v2.0.0 P1.1)**
+  - 6 new Prisma models: Plan, PlanFeature, AddOn, TenantEntitlement,
+    TenantEntitlementAddOn, ImpersonationSession.
+  - 2 new enums: PlanTier (FREE, PRO, ENTERPRISE, LEGACY_FULL_ACCESS),
+    AddOnAppliesTo (ALL, FREE, PRO, ENTERPRISE).
+  - SUPER_ADMIN added to TenantRole (ImpersonationSession impersonator).
+  - Catalog (Plan / PlanFeature / AddOn / TenantEntitlementAddOn) is global;
+    tenant-scoped tables (TenantEntitlement, ImpersonationSession) get RLS
+    tenant_isolation policy.
+  - Migration \`20260704122124_v2_admin_console_schema\` generated via
+    \`prisma migrate dev\` and applied to dev DB.
+  - Note: pre-existing schema drift (SearchIndex, AnalyticsEvent not declared
+    in schema.prisma) is surfaced; tracked for follow-up outside P1.1.
+
 - **Project Management + Document Templates (Phase E / v0.3.1)** — minimal viable
   project + document-template surface for tenant-scoped productivity
   - New backend controllers: `ProjectsController` (`/projects`) and

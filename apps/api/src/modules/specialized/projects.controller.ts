@@ -1,6 +1,7 @@
 import {
-  Body,
   Controller,
+  UseGuards,
+  Body,
   Delete,
   Get,
   Param,
@@ -9,6 +10,9 @@ import {
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { FeatureGateGuard } from '../../common/entitlements/feature-gate.guard';
+import { RequiresFeature } from '../../common/entitlements/requires-feature.decorator';
+
 
 /**
  * ProjectsController — minimal viable Project Management (Phase E / v0.3.1).
@@ -26,6 +30,8 @@ import { Roles } from '../auth/rbac/roles.decorator';
  *  DELETE /projects/:id/tasks/:taskId        → delete task (ADMIN+)
  */
 @Controller('projects')
+@UseGuards(FeatureGateGuard)
+@RequiresFeature('module.projects')
 export class ProjectsController {
   constructor(private readonly service: ProjectsService) {}
 

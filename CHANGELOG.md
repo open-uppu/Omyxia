@@ -137,6 +137,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Migration
 - **0005_align_schema_services** — adds `Employee.baseSalary`, `EmailMessage.{folder,from,body,receivedAt,isRead}`, `EmailTemplate.{code,body}`
 
+### Added (v2.0.0 — Admin Console & Tier-based Access)
+- **P1.1 Schema** — `plans`, `plan_features`, `add_ons`,
+  `tenant_entitlements`, `tenant_entitlement_add_ons`, `impersonation_sessions`,
+  plus `PlanTier` (`FREE`/`PRO`/`ENTERPRISE`/`LEGACY_FULL_ACCESS`) and
+  `AddOnAppliesTo` enums. Migration `20260704122124_v2_admin_console_schema`.
+- **P1.2 Seed** — default plans (Free/Pro/Enterprise) + feature matrix +
+  add-on catalog.
+- **P1.3 Auth middleware** — `SUPER_ADMIN` role bypass RLS, audit-logged.
+- **P1.4 / P1.5 / P1.6 / P1.7 / P1.8** — admin tenants CRUD + suspend +
+  impersonate + 90%-coverage test suite.
+- **P3.1 `@RequiresFeature` + `FeatureGateGuard`** — Redis-cached
+  entitlements service, 14 module controllers wired, 45 unit tests.
+- **P4.1 Stripe billing** — full SDK wiring + 5 webhook handlers +
+  customer portal + Checkout + add-on proration + entitlements sync,
+  37 new tests.
+- **P5.1 Legacy migration** — `prisma/scripts/migrate-legacy-tenants.ts`
+  CLI (`pnpm migrate:legacy-tenants [--dry-run]`). Library lives in
+  `apps/api/src/common/migrations/legacy-migration.ts` (testable in
+  isolation). Creates `LEGACY_FULL_ACCESS` Plan if missing; upserts
+  `TenantEntitlement` for every pre-v2.0.0 tenant with all active
+  add-ons and `expiresAt = 2027-12-31`; emails every OWNER + ADMIN;
+  writes an `AuditLog` row. Idempotent, batched, per-tenant
+  transactions, dry-run mode, structured JSON summary for CI.
+
 ## [0.1.0] - 2026-06-28
 
 ### Added

@@ -393,6 +393,98 @@ export class StripeService {
   }
 
   // ---------------------------------------------------------------------
+  // Metering (P4.2) — usage records + invoice items
+  // ---------------------------------------------------------------------
+
+  /**
+   * Report usage for a metered subscription item. Wraps
+   * `subscriptionItems.createUsageRecord(...)` so the metering module
+   * doesn't need to import the Stripe SDK directly.
+   *
+   * In test mode (no secret key) we deterministically synthesise a
+   * `mbur_test_<tenantId>_<meter>_<timestamp>` id so the metering cron
+   * + admin endpoints can be exercised end-to-end without network.
+   *
+   * `timestamp` is the UTC second at which the usage occurred — Stripe
+   * accepts any time in the subscription's current period.
+   * `quantity` is an integer or 6-dp decimal (Stripe rounds to 6dp).
+   * `action` defaults to `increment` (add to existing usage); the
+   * metering cron always uses `increment` so retries are additive.
+   */
+  async createUsageRecord(input: {
+    tenantId: string;
+    stripeSubscriptionItemId: string;
+    quantity: number;
+    timestamp: Date;
+    action?: 'increment' | 'set';
+  }): Promise<{ stripeUsageRecordId: string; livemode: boolean }> {
+    if (this.testMode) {
+      const id = `mbur_test_${this.slug(input.tenantId)}_${input.stripeSubscriptionItemId.slice(-6)}_${Math.floor(
+        input.timestamp.getTime() / 1000,
+      )}`;
+      return { stripeUsageRecordId: id, livemode: false };
+    }
+
+    const record = (await this.client!.rawRequest(
+      'POST',
+      `/v1/subscription_items/${encodeURIComponent(input.stripeSubscriptionItemId)}/usage_records`,
+      {
+        quantity: Math.round(input.quantity * 1_000_000) / 1_000_000,
+        timestamp: Math.floor(input.timestamp.getTime() / 1000),
+        action: input.action ?? 'increment',
+      },
+    )) as { id: string; livemode: boolean };
+    return { stripeUsageRecordId: record.id, livemode: record.livemode };
+  }
+
+  /**
+   * Append a one-time invoice item for overage charges. Wraps
+   * `invoiceItems.create({ customer, amount, currency, description })`.
+   * The invoice item lands on the customer's *next* generated invoice;
+   * we do not call `invoices.create` here because Stripe groups all
+   * pending items on the customer's next billing cycle automatically.
+   *
+   * In test mode we synthesise `ii_test_<tenantId>_<timestamp>`.
+   */
+  async createInvoiceItem(input: {
+    tenantId: string;
+    stripeCustomerId: string;
+    amount: number; // in major currency units (e.g. dollars)
+    currency: string;
+    description: string;
+    /** Optional metadata echoed back on the invoice item + invoice. */
+    metadata?: Record<string, string>;
+  }): Promise<{ stripeInvoiceItemId: string; livemode: boolean }> {
+    if (this.testMode) {
+      const id = `ii_test_${this.slug(input.tenantId)}_${Math.floor(Date.now() / 1000)}`;
+      return { stripeInvoiceItemId: id, livemode: false };
+    }
+
+    const item = await this.client!.invoiceItems.create({
+      customer: input.stripeCustomerId,
+      amount: Math.round(input.amount * 100), // dollars → cents
+      currency: input.currency.toLowerCase(),
+      description: input.description,
+      metadata: input.metadata,
+    });
+    return { stripeInvoiceItemId: item.id, livemode: item.livemode };
+  }
+
+  /**
+   * Fetch the Stripe customer id for a tenant. Used by the overage
+   * invoicer so we don't have to plumb the customer id through every
+   * call site. Throws if no customer exists yet — callers should
+   * `ensureCustomer` first.
+   */
+  async getStripeCustomerIdForTenant(tenantId: string): Promise<string | null> {
+    const customer = await this.prisma.stripeCustomer.findUnique({
+      where: { tenantId },
+      select: { stripeCustomerId: true },
+    });
+    return customer?.stripeCustomerId ?? null;
+  }
+
+  // ---------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------
 

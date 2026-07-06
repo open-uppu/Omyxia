@@ -43,6 +43,9 @@ export interface ServerEvents {
   'chat:message:new': (payload: ChatMessagePayload) => void;
   'chat:message:edited': (payload: ChatMessageEditedPayload) => void;
   'chat:message:deleted': (payload: ChatMessageDeletedPayload) => void;
+
+  // Entitlements (P3.3 — fan-out from backend Redis pub/sub)
+  'entitlements:invalidated': (payload: EntitlementInvalidatedPayload) => void;
 }
 
 // Payload types
@@ -136,6 +139,31 @@ export interface ReadPayload {
   messageId: string;
 }
 
+/**
+ * EntitlementInvalidatedPayload — emitted server-side on
+ * `entitlements:invalidated` whenever the backend evicts a tenant's
+ * cached entitlements (admin plan change, add-on toggled, Stripe webhook,
+ * manual super-admin invalidate, …).
+ *
+ * Sent to the `tenant:<tenantId>` room. Connected admin / FE clients
+ * should re-fetch `/api/entitlements/me` on receipt.
+ *
+ * `reason` is a free-form short string (`plan-change`, `addon-change`,
+ * `stripe-webhook`, `manual`, …) so the FE can decide whether to surface
+ * a toast / banner.
+ *
+ * `nonce` is a monotonically increasing counter that lets the FE detect
+ * out-of-order events when multiple invalidations are emitted back-to-back
+ * (e.g. plan change followed by an add-on change in the same transaction).
+ */
+export interface EntitlementInvalidatedPayload {
+  tenantId: string;
+  reason: string;
+  source: 'admin' | 'stripe-webhook' | 'system' | 'manual';
+  at: string; // ISO timestamp from the publishing API instance
+  nonce: number;
+}
+
 // Room naming conventions
 export const RoomNames = {
   user: (userId: string) => `user:${userId}`,
@@ -155,6 +183,7 @@ export const ServerEventNames = {
   CHAT_MESSAGE_NEW: 'chat:message:new',
   CHAT_MESSAGE_EDITED: 'chat:message:edited',
   CHAT_MESSAGE_DELETED: 'chat:message:deleted',
+  ENTITLEMENTS_INVALIDATED: 'entitlements:invalidated',
   CONNECTION_ESTABLISHED: 'connection:established',
   CONNECTION_ERROR: 'connection:error',
   AUTH_SUCCESS: 'auth:success',

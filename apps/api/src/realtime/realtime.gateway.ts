@@ -17,6 +17,7 @@ import {
   ClientEventNames,
   RoomNames,
   ServerEventNames,
+  type EntitlementInvalidatedPayload,
 } from './events';
 import type {
   AuthenticatedSocketData,
@@ -235,5 +236,39 @@ export class RealtimeGateway
       rooms: data?.rooms ?? [],
       channels: data?.channels ?? [],
     };
+  }
+
+  /**
+   * Server-side broadcast hook for the entitlement cache invalidation
+   * pipeline (P3.3). The `EntitlementInvalidationSubscriber` service
+   * listens on Redis pub/sub and, on each message, calls this method
+   * to fan-out an `entitlements:invalidated` event to the affected
+   * tenant room.
+   *
+   * Connected clients (admin console + workspace) refresh their
+   * `/api/entitlements/me` payload on receipt so the UI immediately
+   * reflects plan / add-on changes made by a super-admin in another
+   * tab or by Stripe's webhook.
+   *
+   * Returns true if a server instance is available to broadcast.
+   * Returns false (without throwing) when the gateway hasn't been
+   * initialised yet — e.g. during early boot or in a worker that
+   * hasn't started socket.io. Callers should treat that as a no-op.
+   */
+  broadcastEntitlementInvalidation(
+    payload: EntitlementInvalidatedPayload,
+  ): boolean {
+    if (!this.server) {
+      this.logger.warn?.(
+        `broadcastEntitlementInvalidation called before server init — dropping payload for tenant=${payload.tenantId}`,
+      );
+      return false;
+    }
+    const room = RoomNames.tenant(payload.tenantId);
+    this.server.to(room).emit(ServerEventNames.ENTITLEMENTS_INVALIDATED, payload);
+    this.logger.log(
+      `entitlements:invalidated → room=${room} reason=${payload.reason} source=${payload.source} nonce=${payload.nonce}`,
+    );
+    return true;
   }
 }

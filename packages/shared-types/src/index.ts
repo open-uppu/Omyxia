@@ -200,3 +200,4 @@ export interface ApiError {
 export * from './admin-metrics';
 export * from './admin-entitlements';
 export * from './admin-upgrade-modal';
+export * from './admin-plans';

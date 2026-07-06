@@ -6,14 +6,17 @@
     "db:migrate": "prisma migrate deploy",
     "db:reset": "prisma migrate reset --force",
     "db:seed": "pnpm exec dotenv -e ../.env -- ts-node seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "migrate:legacy-tenants": "pnpm exec dotenv -e ../.env -- ts-node scripts/migrate-legacy-tenants.ts"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    "nodemailer": "^6.9.16"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/nodemailer": "^6.4.16",
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.2",
     "prisma": "5.22.0",

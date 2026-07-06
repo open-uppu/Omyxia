@@ -1,0 +1,137 @@
+{{- /*
+  omyxia v2.0.0 P5.2 — daily WORM audit-log snapshot CronJob.
+
+  Schedules `prisma/scripts/audit-snapshot.ts` to run once a day at
+  02:30 UTC (after the hourly pg-snapshot.sh from DISASTER_RECOVERY.md
+  finishes at 02:00 UTC, so the row dump is consistent). Uploads the
+  signed JSONL + signature + manifest to S3 with Object Lock COMPLIANCE
+  mode for 7 years (`AUDIT_OBJECT_LOCK_DAYS=2555`).
+
+  SOC2 controls traced:
+    - CC6.1 logical access controls (bucket is owner-locked for the
+      retention period).
+    - CC7.2 system operations (daily automated run + SUMMARY_JSON log).
+    - CC9.2 risk mitigation (off-band chain hash protects against
+      logical DB tampering even if Postgres gets compromised).
+
+  Override knobs (in helm values.yaml under `auditSnapshot`):
+    enabled           (default true)
+    schedule          (default "30 2 * * *", 02:30 UTC daily)
+    suspend           (bool) when true, the CronJob is suspended
+    hmacSecretName    (default "omyxia-audit-hmac", secret holds the
+                      hex-encoded AUDIT_HMAC_SECRET — 32+ bytes)
+    image             (default same registry as the API image; the
+                      snapshot CLI ships with the api image)
+    awsCredentialsSecret (default "omyxia-audit-aws", keys:
+                      aws-access-key, aws-secret-key)
+    s3Bucket          (required when enabled)
+    s3Endpoint        (optional — set for MinIO self-host)
+    s3Region          (default us-east-1)
+    objectLockDays    (default 2555 = 7y)
+    auditSecretName   (default "omyxia-db", DATABASE_URL)
+    resources         (default minimal: 100m/256Mi)
+*/ -}}
+{{- if .Values.auditSnapshot.enabled | default true -}}
+{{- if not .Values.auditSnapshot.s3Bucket -}}
+{{- fail "auditSnapshot.s3Bucket is required when auditSnapshot.enabled=true (P5.2 WORM)" -}}
+{{- end -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "omyxia.fullname" . }}-audit-snapshot
+  labels:
+    {{- include "omyxia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: audit-snapshot
+    app.kubernetes.io/part-of: omyxia
+    phase: "5.2"
+spec:
+  schedule: {{ .Values.auditSnapshot.schedule | default "30 2 * * *" | quote }}
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 30
+  startingDeadlineSeconds: 600
+  suspend: {{ .Values.auditSnapshot.suspend | default false }}
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            {{- include "omyxia.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: audit-snapshot
+            phase: "5.2"
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ include "omyxia.fullname" . }}-audit-snapshot
+          imagePullSecrets:
+            {{- toYaml .Values.imagePullSecrets | nindent 12 }}
+          containers:
+            - name: audit-snapshot
+              image: {{ .Values.auditSnapshot.image | default .Values.api.image | quote }}
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -euo pipefail
+                  echo "[$(date -u +%FT%TZ)] P5.2 audit-snapshot starting"
+                  node -r ts-node/register \
+                       /app/prisma/scripts/audit-snapshot.ts \
+                    --bucket="$AUDIT_S3_BUCKET" \
+                    ${AUDIT_S3_ENDPOINT:+--endpoint="$AUDIT_S3_ENDPOINT"} \
+                    --region="$AUDIT_S3_REGION" \
+                    --date="$(date -u +%Y-%m-%d)" \
+                    --retention-days="$AUDIT_OBJECT_LOCK_DAYS"
+                  echo "[$(date -u +%FT%TZ)] P5.2 audit-snapshot done"
+              env:
+                - name: NODE_ENV
+                  value: production
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.auditSnapshot.auditSecretName | default "omyxia-db" }}
+                      key:  database-url
+                - name: AUDIT_HMAC_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.auditSnapshot.hmacSecretName | default "omyxia-audit-hmac" }}
+                      key:  audit-hmac-secret
+                - name: AUDIT_S3_BUCKET
+                  value: {{ .Values.auditSnapshot.s3Bucket | quote }}
+                - name: AUDIT_S3_ENDPOINT
+                  value: {{ .Values.auditSnapshot.s3Endpoint | default "" | quote }}
+                - name: AUDIT_S3_REGION
+                  value: {{ .Values.auditSnapshot.s3Region | default "us-east-1" | quote }}
+                - name: AUDIT_OBJECT_LOCK_DAYS
+                  value: {{ .Values.auditSnapshot.objectLockDays | default 2555 | quote }}
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.auditSnapshot.awsCredentialsSecret | default "omyxia-audit-aws" }}
+                      key:  aws-access-key
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.auditSnapshot.awsCredentialsSecret | default "omyxia-audit-aws" }}
+                      key:  aws-secret-key
+              resources:
+                {{- toYaml (.Values.auditSnapshot.resources | default dict) | nindent 16 }}
+              securityContext:
+                allowPrivilegeEscalation: false
+                runAsNonRoot: true
+                runAsUser: 1000
+                capabilities:
+                  drop: ["ALL"]
+                readOnlyRootFilesystem: true
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "omyxia.fullname" . }}-audit-snapshot
+  labels:
+    {{- include "omyxia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: audit-snapshot
+    phase: "5.2"
+{{- end }}

@@ -43,3 +43,4 @@ Thumbs.db
 # Test artifacts
 playwright-report/
 test-results/
+.workboard/

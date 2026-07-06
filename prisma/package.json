@@ -6,18 +6,25 @@
     "db:migrate": "prisma migrate deploy",
     "db:reset": "prisma migrate reset --force",
     "db:seed": "pnpm exec dotenv -e ../.env -- ts-node seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "audit-snapshot": "ts-node scripts/audit-snapshot.ts",
+    "audit-snapshot:dry-run": "ts-node scripts/audit-snapshot.ts --dry-run",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.500.0",
     "@prisma/client": "5.22.0",
     "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.500.0",
     "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.0.0",
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.2",
     "prisma": "5.22.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^2.1.9"
   }
 }

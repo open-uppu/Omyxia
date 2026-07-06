@@ -24,6 +24,9 @@ importers:
       typescript:
         specifier: ^5.4.0
         version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.20.0)(jsdom@29.1.1(@noble/hashes@1.8.0))(terser@5.48.0)
 
   apps/api:
     dependencies:
@@ -267,6 +270,9 @@ importers:
 
   prisma:
     dependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.500.0
+        version: 3.1075.0
       '@prisma/client':
         specifier: 5.22.0
         version: 5.22.0(prisma@5.22.0)
@@ -277,6 +283,9 @@ importers:
       '@types/bcryptjs':
         specifier: ^2.4.6
         version: 2.4.6
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.0
       dotenv:
         specifier: ^16.4.5
         version: 16.4.5
@@ -292,6 +301,9 @@ importers:
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.20.0)(jsdom@29.1.1(@noble/hashes@1.8.0))(terser@5.48.0)
 
 packages:
 

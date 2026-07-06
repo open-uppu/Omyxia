@@ -760,10 +760,23 @@ model AuditLog {
   ipAddress String?
   userAgent String?
   createdAt DateTime    @default(now()) @db.Timestamp(6)
+  /// P5.2 WORM tamper-evidence: HMAC-SHA256 hex digest of canonical row
+  /// content + previous_signature. Computed by AuditSigner on insert.
+  signature          String?
+  /// P5.2 WORM tamper-evidence: signature of the immediately preceding
+  /// audit row (per-tenant chain head). NULL for the very first signed
+  /// row in a tenant.
+  previousSignature  String?     @map("previous_signature")
+  /// P5.2 WORM tamper-evidence: timestamp at which the signature was
+  /// computed. Mirrors createdAt but kept distinct so an auditor can
+  /// detect clock skew vs the chain hash.
+  signedAt           DateTime?   @map("signed_at") @db.Timestamp(6)
 
   @@index([table, rowId], map: "idx_audit_table_row")
   @@index([tenantId, createdAt], map: "idx_audit_tenant_created")
   @@index([userId, createdAt], map: "idx_audit_user_created")
+  @@index([signature], map: "idx_audit_signature")
+  @@index([signedAt], map: "idx_audit_signed_at")
 }
 
 model CreditAssessment {

@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'events';
 import { AuditMiddleware } from './audit.middleware';
+import { InMemoryChainHeadCache } from './audit-signer';
 
 describe('AuditMiddleware', () => {
   let prisma: any;
   let tenantContext: any;
+  let chainCache: InMemoryChainHeadCache;
   let middleware: AuditMiddleware;
 
   beforeEach(() => {
@@ -13,7 +15,8 @@ describe('AuditMiddleware', () => {
       getTenantId: vi.fn().mockReturnValue('t-1'),
       getUserId: vi.fn().mockReturnValue('u-1'),
     };
-    middleware = new AuditMiddleware(prisma, tenantContext);
+    chainCache = new InMemoryChainHeadCache();
+    middleware = new AuditMiddleware(prisma, tenantContext, chainCache);
   });
 
   function makeReqRes(method: string, path: string, body: any = {}) {
@@ -147,5 +150,74 @@ describe('AuditMiddleware', () => {
     expect(arg.after.token).toBe('[REDACTED]');
     expect(arg.after.user.passwordHash).toBe('[REDACTED]');
     expect(arg.before.email).toBe('a@x.com'); // not sensitive
+  });
+
+  // -------------------------------------------------------------------
+  // P5.2 WORM chain tests
+  // -------------------------------------------------------------------
+  describe('P5.2 WORM chain', () => {
+    it('writes previousSignature=null and signedAt=now on the first row', async () => {
+      // chainCache is empty (after beforeEach)
+      expect(await chainCache.get('t-1')).toBeNull();
+
+      const { req, res } = makeReqRes('POST', '/api/crm/leads', { name: 'Acme' });
+      middleware.use(req, res, () => undefined);
+      res.json({ id: 'lead-1' });
+      res.emit('finish');
+      await new Promise((r) => setTimeout(r, 5));
+
+      const arg = prisma.auditLog.create.mock.calls[0][0].data;
+      expect(arg.previousSignature).toBeNull();
+      expect(arg.signature).toBeNull(); // off-band; signed in audit-snapshot CLI
+      expect(arg.signedAt).toBeInstanceOf(Date);
+      // signed_at is recent (within the last 5 s)
+      expect(Date.now() - arg.signedAt.getTime()).toBeLessThan(5000);
+    });
+
+    it('carries the cache chain head as previousSignature on the second row', async () => {
+      const { req, res } = makeReqRes('POST', '/api/crm/leads', { name: 'A' });
+      middleware.use(req, res, () => undefined);
+      res.json({ id: 'l1' });
+      res.emit('finish');
+      await new Promise((r) => setTimeout(r, 5));
+
+      const { req: req2, res: res2 } = makeReqRes('POST', '/api/crm/leads', { name: 'B' });
+      middleware.use(req2, res2, () => undefined);
+      res2.json({ id: 'l2' });
+      res2.emit('finish');
+      await new Promise((r) => setTimeout(r, 5));
+
+      const first = prisma.auditLog.create.mock.calls[0][0].data;
+      const second = prisma.auditLog.create.mock.calls[1][0].data;
+      expect(first.previousSignature).toBeNull();
+      // second.previousSignature is the placeholder set after the first
+      // INSERT (format: 'pending:<isoTimestamp>').
+      expect(second.previousSignature).toMatch(/^pending:\d{4}-\d{2}-\d{2}T/);
+      expect(second.previousSignature).not.toBe(first.previousSignature ?? null);
+    });
+
+    it('uses previousSignature=null for cross-tenant (tenantId=null) writes', async () => {
+      tenantContext.getTenantId.mockReturnValue(undefined);
+      const { req, res } = makeReqRes('POST', '/api/admin/tenants', { slug: 'acme' });
+      middleware.use(req, res, () => undefined);
+      res.json({ id: 'tnt-1' });
+      res.emit('finish');
+      await new Promise((r) => setTimeout(r, 5));
+      const arg = prisma.auditLog.create.mock.calls[0][0].data;
+      expect(arg.previousSignature).toBeNull();
+    });
+
+    it('does not store signature on insert (off-band via snapshot CLI)', async () => {
+      const { req, res } = makeReqRes('PATCH', '/api/crm/leads/leadcuidxxxxxxxxxxxxxxxxx', { name: 'Z' });
+      middleware.use(req, res, () => undefined);
+      res.json({ id: 'leadcuidxxxxxxxxxxxxxxxxx', name: 'Z' });
+      res.emit('finish');
+      await new Promise((r) => setTimeout(r, 5));
+      const arg = prisma.auditLog.create.mock.calls[0][0].data;
+      // WORM trigger forbids UPDATE-after-INSERT, so the live row's
+      // `signature` stays NULL. The off-band ledger is the authoritative
+      // chain hash.
+      expect(arg.signature).toBeNull();
+    });
   });
 });

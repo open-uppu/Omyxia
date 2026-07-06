@@ -1,8 +1,20 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import {
+  Controller,
+  UseGuards,
+  Get,
+  Post,
+  Body,
+  Query,
+} from '@nestjs/common';
 import { TaxService } from './tax.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { FeatureGateGuard } from '../../common/entitlements/feature-gate.guard';
+import { RequiresFeature } from '../../common/entitlements/requires-feature.decorator';
+
 
 @Controller('tax')
+@UseGuards(FeatureGateGuard)
+@RequiresFeature('module.erp')
 export class TaxController {
   constructor(private readonly service: TaxService) {}
 

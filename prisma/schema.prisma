@@ -11,103 +11,106 @@ datasource db {
 }
 
 model Tenant {
-  id                 String               @id @default(cuid())
-  slug               String               @unique
-  name               String
-  plan               TenantPlan           @default(STARTER)
-  status             TenantStatus         @default(ACTIVE)
-  settings           Json                 @default("{}")
-  createdAt          DateTime             @default(now()) @db.Timestamp(6)
-  updatedAt          DateTime             @default(now()) @updatedAt @db.Timestamp(6)
-  ApBill             ApBill[]
-  ArInvoice          ArInvoice[]
-  AttendanceRecord   AttendanceRecord[]
-  BackupRecord       BackupRecord[]
-  CashFlowForecast   CashFlowForecast[]
-  ChartOfAccounts    ChartOfAccounts[]
-  ChatChannel        ChatChannel[]
-  ChatChannelMember  ChatChannelMember[]
-  ChatMessage        ChatMessage[]
-  ConsentRecord      ConsentRecord[]
-  CookieConsent      CookieConsent[]
-  CreditAssessment   CreditAssessment[]
-  CrmActivity        CrmActivity[]
-  CrmLead            CrmLead[]
-  CrmPipeline        CrmPipeline[]
-  Customer           Customer[]
-  CustomerEvent      CustomerEvent[]
-  CustomerProfile    CustomerProfile[]
-  Dashboard          Dashboard[]
-  DataBreachIncident DataBreachIncident[]
-  DataSubjectRequest DataSubjectRequest[]
-  departments        Department[]
-  Device             Device[]
-  DocumentInstance   DocumentInstance[]
-  DocumentTemplate   DocumentTemplate[]
-  EmailMessage       EmailMessage[]
-  EmailTemplate      EmailTemplate[]
-  employees          Employee[]
-  FileFolder         FileFolder[]
-  FileItem           FileItem[]
-  FiscalPeriod       FiscalPeriod[]
-  FraudAlert         FraudAlert[]
-  ImpersonationSession ImpersonationSession[]   // v2.0.0 admin console — P1.1
-  InventoryItem      InventoryItem[]
-  Invoice            Invoice[]
-  JournalEntry       JournalEntry[]
-  JournalLine        JournalLine[]
-  KpiDefinition      KpiDefinition[]
-  KpiSnapshot        KpiSnapshot[]
-  LeaveQuota         LeaveQuota[]
-  LeaveRequest       LeaveRequest[]
-  MarketingCampaign  MarketingCampaign[]
-  PayrollLine        PayrollLine[]
-  PayrollPeriod      PayrollPeriod[]
-  positions          Position[]
-  PrivacyPolicy      PrivacyPolicy[]
-  Project            Project[]
-  ProjectTask        ProjectTask[]
-  ReportSnapshot     ReportSnapshot[]
-  StockMovement      StockMovement[]
-  SupplierScore      SupplierScore[]
-  TaxRate            TaxRate[]
-  TaxTransaction     TaxTransaction[]
-  TenantEntitlement  TenantEntitlement[]       // v2.0.0 admin console — P1.1
-  ThreatEvent        ThreatEvent[]
-  Ticket             Ticket[]
-  users              UserTenant[]
-  Vehicle            Vehicle[]
-  VehicleTrip        VehicleTrip[]
-  Vendor             Vendor[]
-  Warehouse          Warehouse[]
+  id                   String                 @id @default(cuid())
+  slug                 String                 @unique
+  name                 String
+  plan                 TenantPlan             @default(STARTER)
+  status               TenantStatus           @default(ACTIVE)
+  settings             Json                   @default("{}")
+  stripeCustomerId     String?                @unique
+  createdAt            DateTime               @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime               @default(now()) @updatedAt @db.Timestamp(6)
+  ApBill               ApBill[]
+  ArInvoice            ArInvoice[]
+  AttendanceRecord     AttendanceRecord[]
+  BackupRecord         BackupRecord[]
+  CashFlowForecast     CashFlowForecast[]
+  ChartOfAccounts      ChartOfAccounts[]
+  ChatChannel          ChatChannel[]
+  ChatChannelMember    ChatChannelMember[]
+  ChatMessage          ChatMessage[]
+  stripeSubscription   StripeSubscription?
+  stripeCustomer       StripeCustomer?
+  ConsentRecord        ConsentRecord[]
+  CookieConsent        CookieConsent[]
+  CreditAssessment     CreditAssessment[]
+  CrmActivity          CrmActivity[]
+  CrmLead              CrmLead[]
+  CrmPipeline          CrmPipeline[]
+  Customer             Customer[]
+  CustomerEvent        CustomerEvent[]
+  CustomerProfile      CustomerProfile[]
+  Dashboard            Dashboard[]
+  DataBreachIncident   DataBreachIncident[]
+  DataSubjectRequest   DataSubjectRequest[]
+  departments          Department[]
+  Device               Device[]
+  DocumentInstance     DocumentInstance[]
+  DocumentTemplate     DocumentTemplate[]
+  EmailMessage         EmailMessage[]
+  EmailTemplate        EmailTemplate[]
+  employees            Employee[]
+  FileFolder           FileFolder[]
+  FileItem             FileItem[]
+  FiscalPeriod         FiscalPeriod[]
+  FraudAlert           FraudAlert[]
+  ImpersonationSession ImpersonationSession[] // v2.0.0 admin console - P1.1
+  InventoryItem        InventoryItem[]
+  Invoice              Invoice[]
+  JournalEntry         JournalEntry[]
+  JournalLine          JournalLine[]
+  KpiDefinition        KpiDefinition[]
+  KpiSnapshot          KpiSnapshot[]
+  LeaveQuota           LeaveQuota[]
+  LeaveRequest         LeaveRequest[]
+  MarketingCampaign    MarketingCampaign[]
+  PayrollLine          PayrollLine[]
+  PayrollPeriod        PayrollPeriod[]
+  positions            Position[]
+  PrivacyPolicy        PrivacyPolicy[]
+  Project              Project[]
+  ProjectTask          ProjectTask[]
+  ReportSnapshot       ReportSnapshot[]
+  StockMovement        StockMovement[]
+  SupplierScore        SupplierScore[]
+  TaxRate              TaxRate[]
+  TaxTransaction       TaxTransaction[]
+  TenantEntitlement    TenantEntitlement[] // v2.0.0 admin console - P1.1
+  ThreatEvent          ThreatEvent[]
+  Ticket               Ticket[]
+  users                UserTenant[]
+  Vehicle              Vehicle[]
+  VehicleTrip          VehicleTrip[]
+  Vendor               Vendor[]
+  Warehouse            Warehouse[]
 
   @@index([status], map: "idx_tenant_status")
 }
 
 model User {
-  id                String              @id @default(cuid())
-  email             String              @unique @db.Citext
-  emailVerified     DateTime?           @db.Timestamp(6)
-  passwordHash      String
-  name              String
-  locale            String              @default("th")
-  avatarUrl         String?
-  lastLoginAt       DateTime?           @db.Timestamp(6)
-  createdAt         DateTime            @default(now()) @db.Timestamp(6)
-  updatedAt         DateTime            @default(now()) @updatedAt @db.Timestamp(6)
-  ChatChannelMember ChatChannelMember[]
-  ChatMessage       ChatMessage[]
-  CrmActivity       CrmActivity[]
-  CrmLead           CrmLead[]
-  EmailMessage      EmailMessage[]
-  Employee          Employee[]
-  FileFolder        FileFolder[]
-  FileItem          FileItem[]
-  impersonationSessions ImpersonationSession[]   // v2.0.0 admin console — P1.1
-  mfaFactors        MfaFactor[]
-  refreshTokens     RefreshToken[]
-  sessions          UserSession[]
-  tenants           UserTenant[]
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique @db.Citext
+  emailVerified         DateTime?              @db.Timestamp(6)
+  passwordHash          String
+  name                  String
+  locale                String                 @default("th")
+  avatarUrl             String?
+  lastLoginAt           DateTime?              @db.Timestamp(6)
+  createdAt             DateTime               @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime               @default(now()) @updatedAt @db.Timestamp(6)
+  ChatChannelMember     ChatChannelMember[]
+  ChatMessage           ChatMessage[]
+  CrmActivity           CrmActivity[]
+  CrmLead               CrmLead[]
+  EmailMessage          EmailMessage[]
+  Employee              Employee[]
+  FileFolder            FileFolder[]
+  FileItem              FileItem[]
+  impersonationSessions ImpersonationSession[] // v2.0.0 admin console - P1.1
+  mfaFactors            MfaFactor[]
+  refreshTokens         RefreshToken[]
+  sessions              UserSession[]
+  tenants               UserTenant[]
 
   @@index([email], map: "idx_user_email")
 }
@@ -144,15 +147,15 @@ model UserSession {
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   userAgent String?
   ipAddress String?
-  expiresAt DateTime @db.Timestamp(6)
+  expiresAt DateTime  @db.Timestamp(6)
   revokedAt DateTime? @db.Timestamp(6)
-  createdAt DateTime @default(now()) @db.Timestamp(6)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdAt DateTime  @default(now()) @db.Timestamp(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId], map: "idx_refresh_token_user")
   @@index([expiresAt], map: "idx_refresh_token_expires")
@@ -752,18 +755,18 @@ model MfaFactor {
 }
 
 model AuditLog {
-  id                  String                @id @default(cuid())
-  tenantId            String?
-  userId              String?
-  table               String
-  rowId               String?
-  action              AuditAction
-  before              Json?
-  after               Json?
-  ipAddress           String?
-  userAgent           String?
-  createdAt           DateTime              @default(now()) @db.Timestamp(6)
-  impersonationSessions ImpersonationSession[]   // v2.0.0 admin console — P1.1
+  id                    String                 @id @default(cuid())
+  tenantId              String?
+  userId                String?
+  table                 String
+  rowId                 String?
+  action                AuditAction
+  before                Json?
+  after                 Json?
+  ipAddress             String?
+  userAgent             String?
+  createdAt             DateTime               @default(now()) @db.Timestamp(6)
+  impersonationSessions ImpersonationSession[] // v2.0.0 admin console - P1.1
 
   @@index([table, rowId], map: "idx_audit_table_row")
   @@index([tenantId, createdAt], map: "idx_audit_tenant_created")
@@ -1295,7 +1298,7 @@ model Invoice {
 }
 
 // =========================================================================
-// omyxia v2.0.0 — Admin Console & Tier-based Access (Phase 1.1)
+// omyxia v2.0.0 - Admin Console & Tier-based Access (Phase 1.1)
 //
 // Catalog (no tenantId, no RLS):  Plan, PlanFeature, AddOn
 // Per-tenant (tenantId + RLS):    TenantEntitlement, TenantEntitlementAddOn, ImpersonationSession
@@ -1305,20 +1308,27 @@ model Invoice {
 // =========================================================================
 
 model Plan {
-  id           String                @id @default(cuid())
-  name         String                @unique
-  tier         PlanTier
-  price        Decimal               @db.Decimal(15, 2)
-  description  String?
-  isActive     Boolean               @default(true)
-  sortOrder    Int                   @default(0)
-  createdAt    DateTime              @default(now()) @db.Timestamp(6)
-  updatedAt    DateTime              @default(now()) @updatedAt @db.Timestamp(6)
-  entitlements TenantEntitlement[]
-  features     PlanFeature[]
+  id                String                   @id @default(cuid())
+  name              String                   @unique
+  tier              PlanTier
+  price             Decimal                  @db.Decimal(15, 2)
+  description       String?
+  isActive          Boolean                  @default(true)
+  sortOrder         Int                      @default(0)
+  // omyxia v2.0.0 P4.1 — Stripe price mapping
+  // `stripePriceId` takes precedence at checkout time. `stripeProductId`
+  // is set when the plan is registered in Stripe for portal display.
+  stripePriceId     String?                  @unique
+  stripeProductId   String?
+  createdAt         DateTime                 @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime                 @default(now()) @updatedAt @db.Timestamp(6)
+  entitlements      TenantEntitlement[]
+  features          PlanFeature[]
+  subscriptionItems StripeSubscriptionItem[]
 
   @@index([tier], map: "idx_plan_tier")
   @@index([isActive], map: "idx_plan_active")
+  @@index([stripePriceId], map: "idx_plan_stripe_price")
 }
 
 model PlanFeature {
@@ -1335,32 +1345,36 @@ model PlanFeature {
 }
 
 model AddOn {
-  id           String                   @id @default(cuid())
-  name         String                   @unique
-  slug         String                   @unique
-  price        Decimal                  @db.Decimal(15, 2)
-  appliesTo    AddOnAppliesTo           @default(ALL)
-  description  String?
-  isActive     Boolean                  @default(true)
-  createdAt    DateTime                 @default(now()) @db.Timestamp(6)
-  updatedAt    DateTime                 @default(now()) @updatedAt @db.Timestamp(6)
-  entitlements TenantEntitlementAddOn[]
+  id                String                   @id @default(cuid())
+  name              String                   @unique
+  slug              String                   @unique
+  price             Decimal                  @db.Decimal(15, 2)
+  appliesTo         AddOnAppliesTo           @default(ALL)
+  description       String?
+  isActive          Boolean                  @default(true)
+  // omyxia v2.0.0 P4.1 — Stripe price mapping
+  stripePriceId     String?                  @unique
+  createdAt         DateTime                 @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime                 @default(now()) @updatedAt @db.Timestamp(6)
+  entitlements      TenantEntitlementAddOn[]
+  subscriptionItems StripeSubscriptionItem[]
 
   @@index([appliesTo], map: "idx_add_on_applies_to")
   @@index([isActive], map: "idx_add_on_active")
+  @@index([stripePriceId], map: "idx_add_on_stripe_price")
 }
 
 model TenantEntitlement {
-  id          String                    @id @default(cuid())
+  id          String                   @id @default(cuid())
   tenantId    String
   planId      String
-  effectiveAt DateTime                  @db.Timestamp(6)
-  expiresAt   DateTime?                 @db.Timestamp(6)
-  createdAt   DateTime                  @default(now()) @db.Timestamp(6)
-  updatedAt   DateTime                  @default(now()) @updatedAt @db.Timestamp(6)
+  effectiveAt DateTime                 @db.Timestamp(6)
+  expiresAt   DateTime?                @db.Timestamp(6)
+  createdAt   DateTime                 @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime                 @default(now()) @updatedAt @db.Timestamp(6)
   addOns      TenantEntitlementAddOn[]
-  plan        Plan                      @relation(fields: [planId], references: [id], onUpdate: NoAction)
-  tenant      Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  plan        Plan                     @relation(fields: [planId], references: [id], onUpdate: NoAction)
+  tenant      Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([tenantId], map: "idx_tenant_entitlement_tenant")
   @@index([tenantId, effectiveAt], map: "idx_tenant_entitlement_effective")
@@ -1368,12 +1382,12 @@ model TenantEntitlement {
 }
 
 model TenantEntitlementAddOn {
-  id            String             @id @default(cuid())
+  id            String            @id @default(cuid())
   entitlementId String
   addOnId       String
-  createdAt     DateTime           @default(now()) @db.Timestamp(6)
-  addOn         AddOn              @relation(fields: [addOnId], references: [id], onUpdate: NoAction)
-  entitlement   TenantEntitlement  @relation(fields: [entitlementId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdAt     DateTime          @default(now()) @db.Timestamp(6)
+  addOn         AddOn             @relation(fields: [addOnId], references: [id], onUpdate: NoAction)
+  entitlement   TenantEntitlement @relation(fields: [entitlementId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([entitlementId, addOnId])
   @@index([entitlementId], map: "idx_tenant_ent_addon_ent")
@@ -1608,4 +1622,121 @@ enum TenantStatus {
   ACTIVE
   SUSPENDED
   ARCHIVED
+}
+
+// =========================================================================
+// omyxia v2.0.0 P4.1 — Stripe billing (subscriptions + add-on proration)
+//
+// Per-tenant (RLS): StripeCustomer, StripeSubscription, StripeSubscriptionItem.
+// Idempotency log (no RLS): StripeWebhookEvent.
+//
+// Price mapping is stored on Plan.stripePriceId + AddOn.stripePriceId.
+// Webhook ingress updates StripeSubscription + StripeSubscriptionItem rows,
+// then `EntitlementsSyncService` propagates the diff into TenantEntitlement
+// + TenantEntitlementAddOn, then invalidates the entitlements Redis cache.
+// =========================================================================
+
+model StripeCustomer {
+  id               String   @id @default(cuid())
+  tenantId         String   @unique
+  stripeCustomerId String   @unique
+  email            String?
+  // Cached at create time so we have a denormalised billing contact record
+  // even before the customer portal email is set in Stripe.
+  name             String?
+  // Cached so we can show the latest sync state without re-hitting Stripe.
+  livemode         Boolean  @default(false)
+  createdAt        DateTime @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([stripeCustomerId], map: "idx_stripe_customer_id")
+}
+
+model StripeSubscription {
+  id                   String                   @id @default(cuid())
+  tenantId             String                   @unique
+  stripeSubscriptionId String                   @unique
+  status               StripeSubscriptionStatus
+  currentPeriodStart   DateTime                 @db.Timestamp(6)
+  currentPeriodEnd     DateTime                 @db.Timestamp(6)
+  cancelAtPeriodEnd    Boolean                  @default(false)
+  cancelAt             DateTime?                @db.Timestamp(6)
+  canceledAt           DateTime?                @db.Timestamp(6)
+  trialStart           DateTime?                @db.Timestamp(6)
+  trialEnd             DateTime?                @db.Timestamp(6)
+  createdAt            DateTime                 @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime                 @default(now()) @updatedAt @db.Timestamp(6)
+  items                StripeSubscriptionItem[]
+  tenant               Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([stripeSubscriptionId], map: "idx_stripe_subscription_id")
+  @@index([status], map: "idx_stripe_subscription_status")
+}
+
+model StripeSubscriptionItem {
+  id                       String             @id @default(cuid())
+  subscriptionId           String
+  stripeSubscriptionItemId String             @unique
+  stripePriceId            String
+  kind                     StripeItemKind
+  addOnId                  String?
+  // Base plan items reference planId so the entitlements sync can rebuild
+  // the plan association from webhook payloads without re-querying by price.
+  planId                   String?
+  quantity                 Int                @default(1)
+  // Cached so the entitlements sync can decide whether the item is still
+  // active in the current period (Stripe can keep "deleted" items around
+  // for ~24h for audit trail — we hide them after this flag flips false).
+  isActive                 Boolean            @default(true)
+  createdAt                DateTime           @default(now()) @db.Timestamp(6)
+  updatedAt                DateTime           @default(now()) @updatedAt @db.Timestamp(6)
+  subscription             StripeSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  plan                     Plan?              @relation(fields: [planId], references: [id], onUpdate: NoAction)
+  addOn                    AddOn?             @relation(fields: [addOnId], references: [id], onUpdate: NoAction)
+
+  @@index([subscriptionId], map: "idx_stripe_sub_item_sub")
+  @@index([stripePriceId], map: "idx_stripe_sub_item_price")
+  @@index([planId], map: "idx_stripe_sub_item_plan")
+  @@index([addOnId], map: "idx_stripe_sub_item_addon")
+}
+
+model StripeWebhookEvent {
+  id            String              @id @default(cuid())
+  stripeEventId String              @unique
+  type          String
+  livemode      Boolean             @default(false)
+  receivedAt    DateTime            @default(now()) @db.Timestamp(6)
+  processedAt   DateTime?           @db.Timestamp(6)
+  status        StripeWebhookStatus @default(RECEIVED)
+  errorMessage  String?
+  // Capped to a small JSON window (Stripe delivers <1MB events; we keep
+  // the essentials — id, type, data.object.{id,status,items,...}).
+  payload       Json
+
+  @@index([type], map: "idx_stripe_webhook_type")
+  @@index([status, receivedAt], map: "idx_stripe_webhook_status")
+}
+
+enum StripeItemKind {
+  BASE_PLAN
+  ADDON
+}
+
+enum StripeSubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  PAUSED
+}
+
+enum StripeWebhookStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  SKIPPED
 }

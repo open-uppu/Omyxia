@@ -198,3 +198,4 @@ export interface ApiError {
 // Re-export the Admin Console / Dashboard metrics contracts so consumers
 // only need `@omyxia/shared-types`.
 export * from './admin-metrics';
+export * from './admin-tenants';

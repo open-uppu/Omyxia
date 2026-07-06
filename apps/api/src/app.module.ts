@@ -20,6 +20,7 @@ import { CrmModule } from './modules/crm/crm.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { SpecializedModule } from './modules/specialized/specialized.module';
 import { GovernanceModule } from './modules/governance/governance.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { HealthController } from './modules/health/health.controller';
 import { StorageModule } from './storage/storage.module';
 import { RealtimeModule } from './realtime/realtime.module';
@@ -48,6 +49,7 @@ import { RealtimeModule } from './realtime/realtime.module';
     WorkspaceModule,
     SpecializedModule,
     GovernanceModule,
+    AdminModule,
     StorageModule,
     RealtimeModule,
   ],

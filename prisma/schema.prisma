@@ -11,103 +11,111 @@ datasource db {
 }
 
 model Tenant {
-  id                 String               @id @default(cuid())
-  slug               String               @unique
-  name               String
-  plan               TenantPlan           @default(STARTER)
-  status             TenantStatus         @default(ACTIVE)
-  settings           Json                 @default("{}")
-  createdAt          DateTime             @default(now()) @db.Timestamp(6)
-  updatedAt          DateTime             @default(now()) @updatedAt @db.Timestamp(6)
-  ApBill             ApBill[]
-  ArInvoice          ArInvoice[]
-  AttendanceRecord   AttendanceRecord[]
-  BackupRecord       BackupRecord[]
-  CashFlowForecast   CashFlowForecast[]
-  ChartOfAccounts    ChartOfAccounts[]
-  ChatChannel        ChatChannel[]
-  ChatChannelMember  ChatChannelMember[]
-  ChatMessage        ChatMessage[]
-  ConsentRecord      ConsentRecord[]
-  CookieConsent      CookieConsent[]
-  CreditAssessment   CreditAssessment[]
-  CrmActivity        CrmActivity[]
-  CrmLead            CrmLead[]
-  CrmPipeline        CrmPipeline[]
-  Customer           Customer[]
-  CustomerEvent      CustomerEvent[]
-  CustomerProfile    CustomerProfile[]
-  Dashboard          Dashboard[]
-  DataBreachIncident DataBreachIncident[]
-  DataSubjectRequest DataSubjectRequest[]
-  departments        Department[]
-  Device             Device[]
-  DocumentInstance   DocumentInstance[]
-  DocumentTemplate   DocumentTemplate[]
-  EmailMessage       EmailMessage[]
-  EmailTemplate      EmailTemplate[]
-  employees          Employee[]
-  FileFolder         FileFolder[]
-  FileItem           FileItem[]
-  FiscalPeriod       FiscalPeriod[]
-  FraudAlert         FraudAlert[]
-  ImpersonationSession ImpersonationSession[]   // v2.0.0 admin console — P1.1
-  InventoryItem      InventoryItem[]
-  Invoice            Invoice[]
-  JournalEntry       JournalEntry[]
-  JournalLine        JournalLine[]
-  KpiDefinition      KpiDefinition[]
-  KpiSnapshot        KpiSnapshot[]
-  LeaveQuota         LeaveQuota[]
-  LeaveRequest       LeaveRequest[]
-  MarketingCampaign  MarketingCampaign[]
-  PayrollLine        PayrollLine[]
-  PayrollPeriod      PayrollPeriod[]
-  positions          Position[]
-  PrivacyPolicy      PrivacyPolicy[]
-  Project            Project[]
-  ProjectTask        ProjectTask[]
-  ReportSnapshot     ReportSnapshot[]
-  StockMovement      StockMovement[]
-  SupplierScore      SupplierScore[]
-  TaxRate            TaxRate[]
-  TaxTransaction     TaxTransaction[]
-  TenantEntitlement  TenantEntitlement[]       // v2.0.0 admin console — P1.1
-  ThreatEvent        ThreatEvent[]
-  Ticket             Ticket[]
-  users              UserTenant[]
-  Vehicle            Vehicle[]
-  VehicleTrip        VehicleTrip[]
-  Vendor             Vendor[]
-  Warehouse          Warehouse[]
+  id                   String                 @id @default(cuid())
+  slug                 String                 @unique
+  name                 String
+  plan                 TenantPlan             @default(STARTER)
+  status               TenantStatus           @default(ACTIVE)
+  /// P1.4 — admin tenant listing: human-facing custom domain
+  /// (e.g. `acme.example.com`). Nullable so v1.0.0 tenants keep
+  /// working without a backfill; P5.1 sets it from the operator's
+  /// deploy target.
+  domain               String?
+  /// P1.4 — admin tenant listing: deployment region (`eu`/`us`/`apac`).
+  /// Nullable for the same reason as `domain`. Backfilled by P5.1.
+  region               String?
+  settings             Json                   @default("{}")
+  createdAt            DateTime               @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime               @default(now()) @updatedAt @db.Timestamp(6)
+  ApBill               ApBill[]
+  ArInvoice            ArInvoice[]
+  AttendanceRecord     AttendanceRecord[]
+  BackupRecord         BackupRecord[]
+  CashFlowForecast     CashFlowForecast[]
+  ChartOfAccounts      ChartOfAccounts[]
+  ChatChannel          ChatChannel[]
+  ChatChannelMember    ChatChannelMember[]
+  ChatMessage          ChatMessage[]
+  ConsentRecord        ConsentRecord[]
+  CookieConsent        CookieConsent[]
+  CreditAssessment     CreditAssessment[]
+  CrmActivity          CrmActivity[]
+  CrmLead              CrmLead[]
+  CrmPipeline          CrmPipeline[]
+  Customer             Customer[]
+  CustomerEvent        CustomerEvent[]
+  CustomerProfile      CustomerProfile[]
+  Dashboard            Dashboard[]
+  DataBreachIncident   DataBreachIncident[]
+  DataSubjectRequest   DataSubjectRequest[]
+  departments          Department[]
+  Device               Device[]
+  DocumentInstance     DocumentInstance[]
+  DocumentTemplate     DocumentTemplate[]
+  EmailMessage         EmailMessage[]
+  EmailTemplate        EmailTemplate[]
+  employees            Employee[]
+  FileFolder           FileFolder[]
+  FileItem             FileItem[]
+  FiscalPeriod         FiscalPeriod[]
+  FraudAlert           FraudAlert[]
+  ImpersonationSession ImpersonationSession[] // v2.0.0 admin console — P1.1
+  InventoryItem        InventoryItem[]
+  Invoice              Invoice[]
+  JournalEntry         JournalEntry[]
+  JournalLine          JournalLine[]
+  KpiDefinition        KpiDefinition[]
+  KpiSnapshot          KpiSnapshot[]
+  LeaveQuota           LeaveQuota[]
+  LeaveRequest         LeaveRequest[]
+  MarketingCampaign    MarketingCampaign[]
+  PayrollLine          PayrollLine[]
+  PayrollPeriod        PayrollPeriod[]
+  positions            Position[]
+  PrivacyPolicy        PrivacyPolicy[]
+  Project              Project[]
+  ProjectTask          ProjectTask[]
+  ReportSnapshot       ReportSnapshot[]
+  StockMovement        StockMovement[]
+  SupplierScore        SupplierScore[]
+  TaxRate              TaxRate[]
+  TaxTransaction       TaxTransaction[]
+  TenantEntitlement    TenantEntitlement[] // v2.0.0 admin console — P1.1
+  ThreatEvent          ThreatEvent[]
+  Ticket               Ticket[]
+  users                UserTenant[]
+  Vehicle              Vehicle[]
+  VehicleTrip          VehicleTrip[]
+  Vendor               Vendor[]
+  Warehouse            Warehouse[]
 
   @@index([status], map: "idx_tenant_status")
 }
 
 model User {
-  id                String              @id @default(cuid())
-  email             String              @unique @db.Citext
-  emailVerified     DateTime?           @db.Timestamp(6)
-  passwordHash      String
-  name              String
-  locale            String              @default("th")
-  avatarUrl         String?
-  lastLoginAt       DateTime?           @db.Timestamp(6)
-  createdAt         DateTime            @default(now()) @db.Timestamp(6)
-  updatedAt         DateTime            @default(now()) @updatedAt @db.Timestamp(6)
-  ChatChannelMember ChatChannelMember[]
-  ChatMessage       ChatMessage[]
-  CrmActivity       CrmActivity[]
-  CrmLead           CrmLead[]
-  EmailMessage      EmailMessage[]
-  Employee          Employee[]
-  FileFolder        FileFolder[]
-  FileItem          FileItem[]
-  impersonationSessions ImpersonationSession[]   // v2.0.0 admin console — P1.1
-  mfaFactors        MfaFactor[]
-  refreshTokens     RefreshToken[]
-  sessions          UserSession[]
-  tenants           UserTenant[]
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique @db.Citext
+  emailVerified         DateTime?              @db.Timestamp(6)
+  passwordHash          String
+  name                  String
+  locale                String                 @default("th")
+  avatarUrl             String?
+  lastLoginAt           DateTime?              @db.Timestamp(6)
+  createdAt             DateTime               @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime               @default(now()) @updatedAt @db.Timestamp(6)
+  ChatChannelMember     ChatChannelMember[]
+  ChatMessage           ChatMessage[]
+  CrmActivity           CrmActivity[]
+  CrmLead               CrmLead[]
+  EmailMessage          EmailMessage[]
+  Employee              Employee[]
+  FileFolder            FileFolder[]
+  FileItem              FileItem[]
+  impersonationSessions ImpersonationSession[] // v2.0.0 admin console — P1.1
+  mfaFactors            MfaFactor[]
+  refreshTokens         RefreshToken[]
+  sessions              UserSession[]
+  tenants               UserTenant[]
 
   @@index([email], map: "idx_user_email")
 }
@@ -144,15 +152,15 @@ model UserSession {
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   userAgent String?
   ipAddress String?
-  expiresAt DateTime @db.Timestamp(6)
+  expiresAt DateTime  @db.Timestamp(6)
   revokedAt DateTime? @db.Timestamp(6)
-  createdAt DateTime @default(now()) @db.Timestamp(6)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdAt DateTime  @default(now()) @db.Timestamp(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId], map: "idx_refresh_token_user")
   @@index([expiresAt], map: "idx_refresh_token_expires")
@@ -752,21 +760,28 @@ model MfaFactor {
 }
 
 model AuditLog {
-  id                  String                @id @default(cuid())
-  tenantId            String?
-  userId              String?
-  table               String
-  rowId               String?
-  action              AuditAction
-  before              Json?
-  after               Json?
-  ipAddress           String?
-  userAgent           String?
-  createdAt           DateTime              @default(now()) @db.Timestamp(6)
-  impersonationSessions ImpersonationSession[]   // v2.0.0 admin console — P1.1
+  id                    String                 @id @default(cuid())
+  tenantId              String?
+  /// P1.4 — admin actions that target a tenant the actor doesn't
+  /// belong to (e.g. super_admin listing tenants) write their target
+  /// here. NULL for the normal tenant-bound action path. Index
+  /// `idx_audit_target_tenant_created` is used by P1.4's
+  /// `lastActivityAt` aggregation.
+  targetTenantId        String?
+  userId                String?
+  table                 String
+  rowId                 String?
+  action                AuditAction
+  before                Json?
+  after                 Json?
+  ipAddress             String?
+  userAgent             String?
+  createdAt             DateTime               @default(now()) @db.Timestamp(6)
+  impersonationSessions ImpersonationSession[] // v2.0.0 admin console — P1.1
 
   @@index([table, rowId], map: "idx_audit_table_row")
   @@index([tenantId, createdAt], map: "idx_audit_tenant_created")
+  @@index([targetTenantId, createdAt], map: "idx_audit_target_tenant_created")
   @@index([userId, createdAt], map: "idx_audit_user_created")
 }
 
@@ -1305,15 +1320,15 @@ model Invoice {
 // =========================================================================
 
 model Plan {
-  id           String                @id @default(cuid())
-  name         String                @unique
+  id           String              @id @default(cuid())
+  name         String              @unique
   tier         PlanTier
-  price        Decimal               @db.Decimal(15, 2)
+  price        Decimal             @db.Decimal(15, 2)
   description  String?
-  isActive     Boolean               @default(true)
-  sortOrder    Int                   @default(0)
-  createdAt    DateTime              @default(now()) @db.Timestamp(6)
-  updatedAt    DateTime              @default(now()) @updatedAt @db.Timestamp(6)
+  isActive     Boolean             @default(true)
+  sortOrder    Int                 @default(0)
+  createdAt    DateTime            @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime            @default(now()) @updatedAt @db.Timestamp(6)
   entitlements TenantEntitlement[]
   features     PlanFeature[]
 
@@ -1351,16 +1366,16 @@ model AddOn {
 }
 
 model TenantEntitlement {
-  id          String                    @id @default(cuid())
+  id          String                   @id @default(cuid())
   tenantId    String
   planId      String
-  effectiveAt DateTime                  @db.Timestamp(6)
-  expiresAt   DateTime?                 @db.Timestamp(6)
-  createdAt   DateTime                  @default(now()) @db.Timestamp(6)
-  updatedAt   DateTime                  @default(now()) @updatedAt @db.Timestamp(6)
+  effectiveAt DateTime                 @db.Timestamp(6)
+  expiresAt   DateTime?                @db.Timestamp(6)
+  createdAt   DateTime                 @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime                 @default(now()) @updatedAt @db.Timestamp(6)
   addOns      TenantEntitlementAddOn[]
-  plan        Plan                      @relation(fields: [planId], references: [id], onUpdate: NoAction)
-  tenant      Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  plan        Plan                     @relation(fields: [planId], references: [id], onUpdate: NoAction)
+  tenant      Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([tenantId], map: "idx_tenant_entitlement_tenant")
   @@index([tenantId, effectiveAt], map: "idx_tenant_entitlement_effective")
@@ -1368,12 +1383,12 @@ model TenantEntitlement {
 }
 
 model TenantEntitlementAddOn {
-  id            String             @id @default(cuid())
+  id            String            @id @default(cuid())
   entitlementId String
   addOnId       String
-  createdAt     DateTime           @default(now()) @db.Timestamp(6)
-  addOn         AddOn              @relation(fields: [addOnId], references: [id], onUpdate: NoAction)
-  entitlement   TenantEntitlement  @relation(fields: [entitlementId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdAt     DateTime          @default(now()) @db.Timestamp(6)
+  addOn         AddOn             @relation(fields: [addOnId], references: [id], onUpdate: NoAction)
+  entitlement   TenantEntitlement @relation(fields: [entitlementId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([entitlementId, addOnId])
   @@index([entitlementId], map: "idx_tenant_ent_addon_ent")

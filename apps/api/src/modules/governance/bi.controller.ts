@@ -1,8 +1,21 @@
-import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  UseGuards,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { BiService } from './bi.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { FeatureGateGuard } from '../../common/entitlements/feature-gate.guard';
+import { RequiresFeature } from '../../common/entitlements/requires-feature.decorator';
+
 
 @Controller('bi')
+@UseGuards(FeatureGateGuard)
+@RequiresFeature('module.bi')
 export class BiController {
   constructor(private readonly service: BiService) {}
 

@@ -1,8 +1,19 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  UseGuards,
+  Get,
+  Post,
+  Body,
+} from '@nestjs/common';
 import { PositionsService } from './positions.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { FeatureGateGuard } from '../../common/entitlements/feature-gate.guard';
+import { RequiresFeature } from '../../common/entitlements/requires-feature.decorator';
+
 
 @Controller('positions')
+@UseGuards(FeatureGateGuard)
+@RequiresFeature('module.hr')
 export class PositionsController {
   constructor(private readonly service: PositionsService) {}
 

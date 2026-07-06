@@ -1,8 +1,21 @@
-import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
+import {
+  Controller,
+  UseGuards,
+  Get,
+  Post,
+  Param,
+  Body,
+  Query,
+} from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { FeatureGateGuard } from '../../common/entitlements/feature-gate.guard';
+import { RequiresFeature } from '../../common/entitlements/requires-feature.decorator';
+
 
 @Controller('attendance')
+@UseGuards(FeatureGateGuard)
+@RequiresFeature('module.hr')
 export class AttendanceController {
   constructor(private readonly service: AttendanceService) {}
 

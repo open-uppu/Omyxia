@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { ImpersonationAuthController } from './impersonation-auth.controller';
+import { AdminModule } from '../admin/admin.module';
 import { TenantContextModule } from '../../common/tenant-context/tenant-context.module';
 
 @Module({
@@ -11,8 +13,9 @@ import { TenantContextModule } from '../../common/tenant-context/tenant-context.
       signOptions: { expiresIn: '7d' },
     }),
     TenantContextModule,
+    AdminModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, ImpersonationAuthController],
   providers: [AuthService],
   exports: [AuthService],
 })

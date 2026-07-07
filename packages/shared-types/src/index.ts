@@ -199,3 +199,4 @@ export interface ApiError {
 // only need `@omyxia/shared-types`.
 export * from './admin-metrics';
 export * from './admin-tenants';
+export * from './admin-impersonate';

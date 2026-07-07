@@ -3,6 +3,11 @@
  * Shared between server and client for type-safe WebSocket communication
  */
 
+import type {
+  AdminImpersonateStartedPayload,
+  AdminImpersonateEndedPayload,
+} from '@omyxia/shared-types';
+
 // Client -> Server events
 export interface ClientEvents {
   // Authentication
@@ -43,6 +48,17 @@ export interface ServerEvents {
   'chat:message:new': (payload: ChatMessagePayload) => void;
   'chat:message:edited': (payload: ChatMessageEditedPayload) => void;
   'chat:message:deleted': (payload: ChatMessageDeletedPayload) => void;
+
+  // P1.7 — Super-admin impersonation broadcasts. Emitted to every
+  // OTHER super_admin's `user:<id>` room when a session starts or
+  // ends, so the live-indicator in the admin-console updates in real
+  // time without each super_admin having to poll.
+  'admin:impersonate:started': (
+    payload: AdminImpersonateStartedPayload,
+  ) => void;
+  'admin:impersonate:ended': (
+    payload: AdminImpersonateEndedPayload,
+  ) => void;
 }
 
 // Payload types
@@ -159,6 +175,8 @@ export const ServerEventNames = {
   CONNECTION_ERROR: 'connection:error',
   AUTH_SUCCESS: 'auth:success',
   AUTH_FAILED: 'auth:failed',
+  ADMIN_IMPERSONATE_STARTED: 'admin:impersonate:started',
+  ADMIN_IMPERSONATE_ENDED: 'admin:impersonate:ended',
 } as const;
 
 export const ClientEventNames = {

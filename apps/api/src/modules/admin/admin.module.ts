@@ -26,13 +26,15 @@
 import { Module } from '@nestjs/common';
 import { TenantsAdminController } from './tenants-admin.controller';
 import { TenantsAdminService } from './tenants-admin.service';
+import { ImpersonationAdminModule } from './impersonation-admin.module';
 
 @Module({
+  imports: [ImpersonationAdminModule],
   controllers: [TenantsAdminController],
   providers: [TenantsAdminService],
-  // P1.7 (impersonate) will need TenantsAdminService + the
-  // ImpersonationService. Export it now so the future controllers
-  // don't need to import AdminModule twice.
+  // P1.7 (impersonate) — the ImpersonationAdminService is exported
+  // by the sub-module so the auth controller can reach it for the
+  // `/api/auth/impersonate/me` endpoint.
   exports: [TenantsAdminService],
 })
 export class AdminModule {}

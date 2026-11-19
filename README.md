@@ -428,6 +428,7 @@ Workers run autonomously and post PRs for human review.
 - Responsible disclosure: see [SECURITY.md](SECURITY.md).
 - Self-hosting: see [docs/SELF-HOST.md](docs/SELF-HOST.md).
 - Architecture records: see [docs/adr/](docs/adr/).
+- Microservices Blueprint: see [docs/architecture/MICROSERVICES_BLUEPRINT.md](docs/architecture/MICROSERVICES_BLUEPRINT.md).
 - Discussions: use [GitHub Discussions](https://github.com/open-uppu/omyxia/discussions) for design and roadmap topics.
 
 ---

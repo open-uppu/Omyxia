@@ -198,5 +198,20 @@ export interface ApiError {
 // Re-export the Admin Console / Dashboard metrics contracts so consumers
 // only need `@omyxia/shared-types`.
 export * from './admin-metrics';
-export * from './admin-tenants';
+export {
+  AdminTenantRegionSchema,
+  type AdminTenantRegion,
+  ADMIN_TENANT_PAGE_SIZE,
+  ADMIN_TENANT_MAX_PAGE_SIZE,
+  AdminTenantRowSchema,
+  type AdminTenantRow,
+  AdminTenantFilterSchema,
+  type AdminTenantFilter,
+  TenantListFiltersEchoSchema,
+  type TenantListFiltersEcho,
+  TenantListResponseSchema,
+  type TenantListResponse,
+  parseAdminTenantFilters,
+} from './admin-tenants';
 export * from './admin-impersonate';
+export * from './microservice-entitlements';

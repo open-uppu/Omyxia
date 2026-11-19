@@ -43,3 +43,6 @@ Thumbs.db
 # Test artifacts
 playwright-report/
 test-results/
+
+# OpenBot Agent directories
+agent-*

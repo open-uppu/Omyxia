@@ -21,16 +21,18 @@ export type MicroserviceId = z.infer<typeof MicroserviceIdSchema>;
 /**
  * Feature keys required to unlock a specific microservice.
  * An empty list signifies a base/foundational service accessible to all active tenants.
+ * Includes both v3 microservice keys (*_CORE) and v2 dot-notation aliases (module.*)
+ * for backward compatibility with existing PlanFeature seeds and @RequiresFeature guards.
  */
 export const SERVICE_FEATURE_MAPPING: Record<MicroserviceId, string[]> = {
   core: [],
-  hrm: ['HRM_CORE', 'EMPLOYEE_MANAGEMENT'],
-  erp: ['ERP_CORE', 'FINANCIAL_LEDGERS'],
-  crm: ['CRM_CORE', 'PIPELINE_MANAGEMENT'],
-  wms: ['WMS_CORE', 'INVENTORY_TRACKING'],
-  workspace: ['WORKSPACE_BASE'],
-  analytics: ['ANALYTICS_BI', 'ADVANCED_REPORTS'],
-  governance: ['PDPA_COMPLIANCE', 'AUDIT_LOG_STREAMING'],
+  hrm: ['HRM_CORE', 'EMPLOYEE_MANAGEMENT', 'module.hr'],
+  erp: ['ERP_CORE', 'FINANCIAL_LEDGERS', 'module.erp'],
+  crm: ['CRM_CORE', 'PIPELINE_MANAGEMENT', 'module.crm'],
+  wms: ['WMS_CORE', 'INVENTORY_TRACKING', 'module.wms'],
+  workspace: ['WORKSPACE_BASE', 'module.email', 'module.chat'],
+  analytics: ['ANALYTICS_BI', 'ADVANCED_REPORTS', 'module.bi'],
+  governance: ['PDPA_COMPLIANCE', 'AUDIT_LOG_STREAMING', 'module.mas'],
 };
 
 // ============================================================================

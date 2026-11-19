@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { ApService } from './ap.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { RequiresService } from '../../common/service-entitlements/requires-service.decorator';
 
 @Controller('ap')
+@RequiresService('erp')
 export class ApController {
   constructor(private readonly service: ApService) {}
 

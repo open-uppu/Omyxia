@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { RequiresService } from '../../common/service-entitlements/requires-service.decorator';
 
 @Controller('attendance')
+@RequiresService('hrm')
 export class AttendanceController {
   constructor(private readonly service: AttendanceService) {}
 

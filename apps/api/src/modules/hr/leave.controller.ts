@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
 import { LeaveService } from './leave.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { RequiresService } from '../../common/service-entitlements/requires-service.decorator';
 
 @Controller('leave')
+@RequiresService('hrm')
 export class LeaveController {
   constructor(private readonly service: LeaveService) {}
 

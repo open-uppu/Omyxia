@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { TaxService } from './tax.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { RequiresService } from '../../common/service-entitlements/requires-service.decorator';
 
 @Controller('tax')
+@RequiresService('erp')
 export class TaxController {
   constructor(private readonly service: TaxService) {}
 

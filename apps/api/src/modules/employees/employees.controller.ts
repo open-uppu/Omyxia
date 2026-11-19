@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { RequiresService } from '../../common/service-entitlements/requires-service.decorator';
 
 @Controller('employees')
+@RequiresService('hrm')
 export class EmployeesController {
   constructor(private readonly service: EmployeesService) {}
 

@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
 import { CrmService } from './crm.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { RequiresService } from '../../common/service-entitlements/requires-service.decorator';
 
 @Controller('crm')
+@RequiresService('crm')
 export class CrmController {
   constructor(private readonly service: CrmService) {}
 

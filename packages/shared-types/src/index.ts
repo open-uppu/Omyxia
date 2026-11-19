@@ -27,6 +27,8 @@ export const TenantRoleSchema = z.enum([
   'MANAGER', 'MEMBER', 'SALES_REP', 'SUPPORT_AGENT', 'WAREHOUSE_MANAGER',
 ]);
 
+export type TenantRole = z.infer<typeof TenantRoleSchema>;
+
 export const UserSchema = z.object({
   id: z.string(),
   email: z.string().email(),

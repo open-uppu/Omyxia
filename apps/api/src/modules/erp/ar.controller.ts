@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { ArService } from './ar.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { RequiresService } from '../../common/service-entitlements/requires-service.decorator';
 
 @Controller('ar')
+@RequiresService('erp')
 export class ArController {
   constructor(private readonly service: ArService) {}
 

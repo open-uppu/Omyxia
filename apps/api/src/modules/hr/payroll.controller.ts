@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { PayrollService } from './payroll.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { RequiresService } from '../../common/service-entitlements/requires-service.decorator';
 
 @Controller('payroll')
+@RequiresService('hrm')
 export class PayrollController {
   constructor(private readonly service: PayrollService) {}
 

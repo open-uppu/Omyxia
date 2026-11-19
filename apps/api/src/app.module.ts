@@ -9,6 +9,9 @@ import { MailModule } from './mail/mail.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { MfaModule } from './modules/mfa/mfa.module';
 import { RbacModule } from './modules/auth/rbac/rbac.module';
+import { RedisModule } from './common/redis/redis.module';
+import { ServiceEntitlementsModule } from './common/service-entitlements/service-entitlements.module';
+import { ServiceEntitlementGuard } from './common/service-entitlements/service-entitlement.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './modules/auth/rbac/roles.guard';
 import { TenantsModule } from './modules/tenants/tenants.module';
@@ -52,8 +55,13 @@ import { RealtimeModule } from './realtime/realtime.module';
     AdminModule,
     StorageModule,
     RealtimeModule,
+    RedisModule,
+    ServiceEntitlementsModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: ServiceEntitlementGuard },
+  ],
 })
 export class AppModule {}

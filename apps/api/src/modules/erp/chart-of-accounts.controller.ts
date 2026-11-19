@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
 import { ChartOfAccountsService } from './chart-of-accounts.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { RequiresService } from '../../common/service-entitlements/requires-service.decorator';
 
 @Controller('accounts')
+@RequiresService('erp')
 export class ChartOfAccountsController {
   constructor(private readonly service: ChartOfAccountsService) {}
 

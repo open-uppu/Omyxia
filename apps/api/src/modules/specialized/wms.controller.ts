@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { WmsService } from './wms.service';
 import { Roles } from '../auth/rbac/roles.decorator';
+import { RequiresService } from '../../common/service-entitlements/requires-service.decorator';
 
 @Controller('wms')
+@RequiresService('wms')
 export class WmsController {
   constructor(private readonly service: WmsService) {}
 

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/hero-banner.svg" alt="Omyxia Enterprise Ecosystem Banner" width="100%">
+</p>
+
 <div align="center">
 
 # 🏛️ Omyxia
@@ -193,6 +197,10 @@ Password: demo123!
 ---
 
 ## How it fits together
+
+<p align="center">
+  <img src="docs/assets/architecture-topology.svg" alt="Omyxia Microservices Architecture" width="100%">
+</p>
 
 Tenant isolation is enforced at the request, service, ORM, and database layers.
 

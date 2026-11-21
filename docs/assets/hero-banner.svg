@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 480" width="1280" height="480" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080C15"/>
+      <stop offset="50%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="25%" cy="30%" r="45%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="80%" cy="60%" r="40%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow3" cx="50%" cy="90%" r="50%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#E2E8F0"/>
+      <stop offset="100%" stop-color="#94A3B8"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="50%" stop-color="#A855F7"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="cardBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.02"/>
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255, 255, 255, 0.035)" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1280" height="480" fill="url(#bg)"/>
+  <rect width="1280" height="480" fill="url(#grid)"/>
+
+  <!-- Glowing Orbs -->
+  <circle cx="280" cy="150" r="260" fill="url(#glow1)"/>
+  <circle cx="1020" cy="280" r="240" fill="url(#glow2)"/>
+  <circle cx="640" cy="420" r="300" fill="url(#glow3)"/>
+
+  <!-- Top Pill Badge -->
+  <g transform="translate(80, 55)">
+    <rect width="410" height="36" rx="18" fill="rgba(255,255,255,0.06)" stroke="url(#accentGrad)" stroke-width="1"/>
+    <circle cx="20" cy="18" r="6" fill="#10B981"/>
+    <circle cx="20" cy="18" r="10" fill="#10B981" opacity="0.2"/>
+    <text x="38" y="23" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#E2E8F0" letter-spacing="1.5">OMYXIA ENTERPRISE SAAS ECOSYSTEM</text>
+  </g>
+
+  <!-- Brand Title -->
+  <text x="80" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="56" font-weight="800" fill="url(#textGrad)" letter-spacing="-1">
+    Omyxia <tspan fill="url(#accentGrad)">Enterprise Ecosystem</tspan> 🏛️
+  </text>
+
+  <!-- Subtitle -->
+  <text x="80" y="205" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="20" font-weight="400" fill="#94A3B8">
+    Central App Launcher &amp; Micro-frontend Gateway for 14 Enterprise Systems
+  </text>
+  <text x="80" y="235" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#64748B">
+    Multi-Tenant Architecture · Dynamic Subscription Gating · Decoupled Microservices · Thai Localization
+  </text>
+
+  <!-- Feature Cards Grid (Bottom) -->
+  <!-- Card 1: App Launcher -->
+  <g transform="translate(80, 275)" filter="url(#dropShadow)">
+    <rect width="265" height="150" rx="16" fill="rgba(15, 23, 42, 0.75)" stroke="url(#cardBorder)" stroke-width="1"/>
+    <rect x="18" y="18" width="36" height="36" rx="10" fill="rgba(99, 102, 241, 0.15)"/>
+    <text x="27" y="42" font-size="20">🚀</text>
+    <text x="64" y="34" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">App Launcher</text>
+    <text x="64" y="50" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="500" fill="#818CF8">Port :3000</text>
+    <text x="18" y="85" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" fill="#CBD5E1">Central catalog connecting</text>
+    <text x="18" y="105" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" fill="#CBD5E1">all 14 enterprise modules</text>
+    <rect x="18" y="118" width="85" height="20" rx="6" fill="rgba(99, 102, 241, 0.2)"/>
+    <text x="26" y="132" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="600" fill="#A5B4FC">ALL SYSTEMS</text>
+  </g>
+
+  <!-- Card 2: Dynamic Entitlement -->
+  <g transform="translate(365, 275)" filter="url(#dropShadow)">
+    <rect width="265" height="150" rx="16" fill="rgba(15, 23, 42, 0.75)" stroke="url(#cardBorder)" stroke-width="1"/>
+    <rect x="18" y="18" width="36" height="36" rx="10" fill="rgba(16, 185, 129, 0.15)"/>
+    <text x="27" y="42" font-size="20">🔐</text>
+    <text x="64" y="34" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">Entitlement Guard</text>
+    <text x="64" y="50" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="500" fill="#34D399">Subscription Gated</text>
+    <text x="18" y="85" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" fill="#CBD5E1">Free / Starter / Pro / Enterprise</text>
+    <text x="18" y="105" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" fill="#CBD5E1">Dynamic Paywall &amp; Access Check</text>
+    <rect x="18" y="118" width="95" height="20" rx="6" fill="rgba(16, 185, 129, 0.2)"/>
+    <text x="26" y="132" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="600" fill="#6EE7B7">TIER SIMULATOR</text>
+  </g>
+
+  <!-- Card 3: Decoupled Services -->
+  <g transform="translate(650, 275)" filter="url(#dropShadow)">
+    <rect width="265" height="150" rx="16" fill="rgba(15, 23, 42, 0.75)" stroke="url(#cardBorder)" stroke-width="1"/>
+    <rect x="18" y="18" width="36" height="36" rx="10" fill="rgba(245, 158, 11, 0.15)"/>
+    <text x="27" y="42" font-size="20">🧩</text>
+    <text x="64" y="34" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">Microservices</text>
+    <text x="64" y="50" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="500" fill="#FBBF24">Multi-Repository</text>
+    <text x="18" y="85" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" fill="#CBD5E1">HRM (:3001) · ERP (:3002)</text>
+    <text x="18" y="105" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" fill="#CBD5E1">CRM (:3003) · Dedicated DBs</text>
+    <rect x="18" y="118" width="95" height="20" rx="6" fill="rgba(245, 158, 11, 0.2)"/>
+    <text x="26" y="132" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="600" fill="#FCD34D">ISOLATED DBs</text>
+  </g>
+
+  <!-- Card 4: Enterprise Ready -->
+  <g transform="translate(935, 275)" filter="url(#dropShadow)">
+    <rect width="265" height="150" rx="16" fill="rgba(15, 23, 42, 0.75)" stroke="url(#cardBorder)" stroke-width="1"/>
+    <rect x="18" y="18" width="36" height="36" rx="10" fill="rgba(6, 182, 212, 0.15)"/>
+    <text x="27" y="42" font-size="20">🇹🇭</text>
+    <text x="64" y="34" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">Thai Enterprise</text>
+    <text x="64" y="50" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="500" fill="#22D3EE">Compliance Ready</text>
+    <text x="18" y="85" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" fill="#CBD5E1">Thai Chart of Accounts (COA)</text>
+    <text x="18" y="105" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" fill="#CBD5E1">VAT &amp; WHT, Thai Payroll</text>
+    <rect x="18" y="118" width="105" height="20" rx="6" fill="rgba(6, 182, 212, 0.2)"/>
+    <text x="26" y="132" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="600" fill="#67E8F9">LOCAL TAX &amp; LAW</text>
+  </g>
+
+  <!-- Top Right Visual Element / Geometric Cluster -->
+  <g transform="translate(980, 50)" opacity="0.85">
+    <rect x="0" y="0" width="220" height="160" rx="18" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)"/>
+    <circle cx="40" cy="40" r="16" fill="#6366F1" fill-opacity="0.3"/>
+    <text x="32" y="46" font-size="16" fill="#FFFFFF">🏢</text>
+    <text x="68" y="38" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF">Tenant Space</text>
+    <text x="68" y="52" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#10B981">● Active · Pro Plan</text>
+    
+    <path d="M 20 80 L 200 80" stroke="rgba(255,255,255,0.06)"/>
+    
+    <text x="20" y="106" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#94A3B8">Entitled Microservices</text>
+    <text x="20" y="130" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="600" fill="#A5B4FC">HRM ✓ · ERP ✓ · CRM ✓</text>
+  </g>
+</svg>

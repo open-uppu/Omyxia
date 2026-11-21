@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520" fill="none">
+  <defs>
+    <linearGradient id="archBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B0F19"/>
+      <stop offset="100%" stop-color="#030712"/>
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <filter id="glowFilter">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="520" rx="16" fill="url(#archBg)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="600" y="45" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" letter-spacing="1">
+    OMYXIA ENTERPRISE MICROSERVICES TOPOLOGY
+  </text>
+  <text x="600" y="70" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" fill="#94A3B8">
+    Decoupled Multi-Repository Architecture with Dynamic Subscription Gating
+  </text>
+
+  <!-- Node: Client Browser -->
+  <g transform="translate(500, 100)">
+    <rect width="200" height="50" rx="10" fill="#1E293B" stroke="#38BDF8" stroke-width="1.5"/>
+    <text x="100" y="31" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="600" fill="#F8FAFC">💻 Client Browser / User</text>
+  </g>
+
+  <!-- Arrow down -->
+  <path d="M 600 150 L 600 185" stroke="#38BDF8" stroke-width="2" stroke-dasharray="4 4"/>
+
+  <!-- Node: Portal Shell -->
+  <g transform="translate(440, 185)">
+    <rect width="320" height="75" rx="12" fill="#1E1B4B" stroke="#6366F1" stroke-width="2" filter="url(#glowFilter)"/>
+    <text x="160" y="28" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">🌐 omyxia-portal-shell (:3000)</text>
+    <text x="160" y="48" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" fill="#C7D2FE">App Launcher · Dynamic Nav · Paywall Modal</text>
+    <text x="160" y="64" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#818CF8">Micro-frontend Remote Loader</text>
+  </g>
+
+  <!-- Connectors from Shell to Gateway & Remotes -->
+  <path d="M 600 260 L 600 295" stroke="#818CF8" stroke-width="2"/>
+
+  <!-- Node: API Gateway & Entitlement -->
+  <g transform="translate(420, 295)">
+    <rect width="360" height="60" rx="12" fill="#064E3B" stroke="#10B981" stroke-width="1.5"/>
+    <text x="180" y="26" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700" fill="#ECFDF5">🛡️ API Gateway &amp; Entitlement Guard</text>
+    <text x="180" y="46" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" fill="#A7F3D0">Redis Cache (&lt;5ms) · JWT Context · Header Injection</text>
+  </g>
+
+  <!-- Connectors to Microservices -->
+  <path d="M 600 355 L 600 380" stroke="#10B981" stroke-width="2"/>
+  <path d="M 200 380 L 1000 380" stroke="#10B981" stroke-width="2"/>
+  <path d="M 200 380 L 200 405" stroke="#10B981" stroke-width="2"/>
+  <path d="M 465 380 L 465 405" stroke="#10B981" stroke-width="2"/>
+  <path d="M 735 380 L 735 405" stroke="#10B981" stroke-width="2"/>
+  <path d="M 1000 380 L 1000 405" stroke="#10B981" stroke-width="2"/>
+
+  <!-- Service 1: HRM -->
+  <g transform="translate(80, 405)">
+    <rect width="240" height="95" rx="10" fill="#1E293B" stroke="#38BDF8" stroke-width="1"/>
+    <text x="120" y="24" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700" fill="#38BDF8">👥 omyxia-service-hrm</text>
+    <text x="120" y="44" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#94A3B8">UI :3001 · API :4001</text>
+    <text x="120" y="62" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#CBD5E1">Employees · Leave · Thai Payroll</text>
+    <rect x="35" y="72" width="170" height="16" rx="4" fill="#0284C7" fill-opacity="0.2"/>
+    <text x="120" y="84" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="600" fill="#7DD3FC">DB: omyxia_hrm (Isolated)</text>
+  </g>
+
+  <!-- Service 2: ERP -->
+  <g transform="translate(345, 405)">
+    <rect width="240" height="95" rx="10" fill="#1E293B" stroke="#A855F7" stroke-width="1"/>
+    <text x="120" y="24" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700" fill="#C084FC">📊 omyxia-service-erp</text>
+    <text x="120" y="44" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#94A3B8">UI :3002 · API :4002</text>
+    <text x="120" y="62" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#CBD5E1">GL · AP/AR · Thai COA · WHT/VAT</text>
+    <rect x="35" y="72" width="170" height="16" rx="4" fill="#9333EA" fill-opacity="0.2"/>
+    <text x="120" y="84" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="600" fill="#E9D5FF">DB: omyxia_erp (Isolated)</text>
+  </g>
+
+  <!-- Service 3: CRM -->
+  <g transform="translate(615, 405)">
+    <rect width="240" height="95" rx="10" fill="#1E293B" stroke="#F59E0B" stroke-width="1"/>
+    <text x="120" y="24" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700" fill="#FBBF24">🎯 omyxia-service-crm</text>
+    <text x="120" y="44" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#94A3B8">UI :3003 · API :4003</text>
+    <text x="120" y="62" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#CBD5E1">Leads · Sales Pipeline · Kanban</text>
+    <rect x="35" y="72" width="170" height="16" rx="4" fill="#D97706" fill-opacity="0.2"/>
+    <text x="120" y="84" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="600" fill="#FDE68A">DB: omyxia_crm (Isolated)</text>
+  </g>
+
+  <!-- Service 4: Core & Roadmap -->
+  <g transform="translate(880, 405)">
+    <rect width="240" height="95" rx="10" fill="#1E293B" stroke="#64748B" stroke-width="1"/>
+    <text x="120" y="24" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700" fill="#94A3B8">⚙️ Core IAM &amp; Add-ons</text>
+    <text x="120" y="44" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#94A3B8">API :4000 (Stripe &amp; Auth)</text>
+    <text x="120" y="62" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#CBD5E1">WMS · BI Analytics · Workspace</text>
+    <rect x="35" y="72" width="170" height="16" rx="4" fill="#475569" fill-opacity="0.2"/>
+    <text x="120" y="84" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="600" fill="#CBD5E1">DB: omyxia_core (Blueprint)</text>
+  </g>
+</svg>
